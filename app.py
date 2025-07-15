@@ -1,4 +1,3 @@
-from dotenv import load_dotenv
 from views import whatsapp
 from views import sheets
 from views import home
@@ -9,7 +8,6 @@ import locale
 
 locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
-load_dotenv()
 
 PAGES = [
     {
