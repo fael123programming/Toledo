@@ -2,6 +2,7 @@ import streamlit.components.v1 as components
 from datetime import datetime
 from supabase import create_client
 from dotenv import load_dotenv
+import httpx
 import plotly.express as px
 import streamlit as st
 from io import BytesIO
@@ -35,7 +36,14 @@ def _upload_to_cloud(file) -> bool:
 def _list_cloud_files() -> list[str]:
     if not client:
         return []
-    objs = client.storage.from_(BUCKET).list("")
+    try:
+        objs = client.storage.from_(BUCKET).list("")
+    except httpx.HTTPError as e:
+        st.error(f"Erro de conexão com Supabase: {e}")
+        return []
+    except Exception as e:
+        st.error(f"Erro Supabase: {e}")
+        return []
     return [
         obj["name"] for obj in objs
         if obj["name"] not in [".emptyFolderPlaceholder", "."]
