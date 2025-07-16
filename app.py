@@ -1,11 +1,7 @@
-from views import whatsapp
-from views import sheets
-from views import home
-from views import docs
+from views import whatsapp, sheets, home, docs, landing, login
 import streamlit as st
 import locale
 import warnings
-
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -15,7 +11,6 @@ except locale.Error:
         locale.setlocale(locale.LC_ALL, "")
     except locale.Error:
         pass
-
 
 PAGES = [
     {
@@ -47,6 +42,20 @@ def main():
         page_icon="title",
         layout="wide"
     )
+
+    if 'page_state' not in st.session_state:
+        st.session_state.page_state = 'landing'
+        st.session_state.logged_in = False
+
+    if st.session_state.page_state == 'landing':
+        landing.render()
+        return
+
+    if not st.session_state.logged_in:
+        st.session_state.page_state = 'login'
+        login.render()
+        return
+
     selected = st.navigation(
         [
             st.Page(
