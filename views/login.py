@@ -49,7 +49,7 @@ def render():
         """,
         unsafe_allow_html=True,
     )
-    submit = st.form_submit_button("Entrar", use_container_width=True)
+    submit = st.button("Entrar", use_container_width=True)
     if submit:
         if user == USERNAME and pwd == PASSWORD:
             st.session_state.logged_in = True
