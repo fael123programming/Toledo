@@ -60,6 +60,8 @@ def render():
         unsafe_allow_html=True,
     )
 
-    if st.button("Entrar"):
-        st.session_state.page_state = "login"
-        st.rerun()
+    _l, c, _r = st.columns([2,1,2])
+    with c:
+        if st.button("Entrar", use_container_width=True):
+            st.session_state.page_state = "login"
+            st.rerun()

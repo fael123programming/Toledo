@@ -70,6 +70,12 @@ def main():
     )
     selected.run()
 
+    with st.sidebar:
+        if st.button("Sair", use_container_width=True):
+            st.session_state.logged_in = False
+            st.session_state.page_state = "landing"
+            st.rerun()
+
 
 if __name__ == "__main__":
     main()
