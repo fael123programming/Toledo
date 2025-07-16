@@ -52,7 +52,6 @@ def render():
         """,
         unsafe_allow_html=True,
     )
-
     _l, center_col, _r = st.columns([2, 1, 2])
     with center_col:
         with st.form("login_form"):
@@ -68,7 +67,6 @@ def render():
                 st.rerun()
             else:
                 st.error("Usuário ou senha inválidos.")
-
         if st.button("Voltar", use_container_width=True):
             st.session_state.page_state = "landing"
             st.rerun()
