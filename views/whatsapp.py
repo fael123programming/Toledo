@@ -1,18 +1,51 @@
+import os
 import streamlit as st
 import pandas as pd
 import webbrowser
+import time
+
 try:
     import pyautogui  # requires a graphical environment
 except Exception:
     pyautogui = None  # gracefully handle import failure in headless envs
-import time
+
+try:
+    from twilio.rest import Client
+except Exception:
+    Client = None
+
+ACCOUNT_SID = os.getenv("TWILIO_ACCOUNT_SID")
+AUTH_TOKEN = os.getenv("TWILIO_AUTH_TOKEN")
+FROM_WHATSAPP = os.getenv("TWILIO_WHATSAPP_FROM")
+twilio_ready = all([Client, ACCOUNT_SID, AUTH_TOKEN, FROM_WHATSAPP])
+twilio_client = Client(ACCOUNT_SID, AUTH_TOKEN) if twilio_ready else None
+
+def _send_message(phone: str, message: str):
+    if twilio_client:
+        twilio_client.messages.create(
+            body=message,
+            from_=f"whatsapp:{FROM_WHATSAPP}",
+            to=f"whatsapp:{phone}",
+        )
+    elif pyautogui:
+        url = f"https://web.whatsapp.com/send?phone={phone}&text={message}"
+        webbrowser.open(url)
+        time.sleep(10)
+        pyautogui.hotkey("enter")  # envia a mensagem
+        time.sleep(2)
+        pyautogui.hotkey("ctrl", "w")  # fecha a aba
+        time.sleep(5)
+    else:
+        raise RuntimeError(
+            "Envio de mensagens indisponível: configure Twilio ou use um ambiente com interface gráfica."
+        )
 
 
 @st.fragment
 def render():
-    if pyautogui is None:
+    if twilio_client is None and pyautogui is None:
         st.warning(
-            "Funcionalidade indisponível neste ambiente devido à falta de interface gráfica."
+            "Envio de mensagens indisponível: configure as variáveis TWILIO_* ou utilize interface gráfica."
         )
         return
     if "sending" not in st.session_state:
@@ -33,13 +66,7 @@ def render():
                 message = message_template
                 for col in columns:
                     message = message.replace(f"{{{col}}}", str(row[col]))
-                url = f"https://web.whatsapp.com/send?phone={phone}&text={message}"
-                webbrowser.open(url)
-                time.sleep(10)
-                pyautogui.hotkey('enter')  # Pressiona Enter para enviar a mensagem
-                time.sleep(2)
-                pyautogui.hotkey('ctrl', 'w')  # Fecha a aba do WhatsApp após enviar
-                time.sleep(5)
+                _send_message(phone, message)
             except Exception as e:
                 st.error(f"Não consegui enviar para {row[phone_col]}: {str(e)}")
             finally:
