@@ -4,9 +4,17 @@ from views import home
 from views import docs
 import streamlit as st
 import locale
+import warnings
 
 
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+try:
+    locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
+except locale.Error:
+    warnings.warn("pt_BR.UTF-8 locale unavailable; using default settings")
+    try:
+        locale.setlocale(locale.LC_ALL, "")
+    except locale.Error:
+        pass
 
 
 PAGES = [
