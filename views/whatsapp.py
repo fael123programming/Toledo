@@ -1,12 +1,20 @@
 import streamlit as st
 import pandas as pd
 import webbrowser
-import pyautogui
+try:
+    import pyautogui  # requires a graphical environment
+except Exception:
+    pyautogui = None  # gracefully handle import failure in headless envs
 import time
 
 
 @st.fragment
 def render():
+    if pyautogui is None:
+        st.warning(
+            "Funcionalidade indisponível neste ambiente devido à falta de interface gráfica."
+        )
+        return
     if "sending" not in st.session_state:
         st.session_state.sending = False
     st.title("📲 WhatsApp Lead")
