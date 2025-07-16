@@ -46,7 +46,6 @@ def render():
     if twilio_client is None and pyautogui is None:
         st.warning(
             "Envio de mensagens indisponível: configure as variáveis TWILIO_* ou utilize interface gráfica."
-        )
         return
     if "sending" not in st.session_state:
         st.session_state.sending = False
