@@ -18,14 +18,17 @@ def render():
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 80vh;
+            min-height: 70vh;
             text-align: center;
         }
         .login-container img {
             width: 140px;
             border-radius: 50%;
             box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-            margin-bottom: 20px;
+            margin-bottom: 10px;
+        }
+        .login-container h2 {
+            margin-bottom: 8px;
         }
         .stButton>button {
             background-color: #3b82f6;

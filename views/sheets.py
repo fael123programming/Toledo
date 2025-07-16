@@ -13,8 +13,8 @@ import os
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 BUCKET = "planilhas"
 
 auth_ok = bool(SUPABASE_URL and SUPABASE_KEY)
@@ -229,7 +229,9 @@ def render():
     """
     components.html(html, height=180)
     if not auth_ok:
-        st.warning("⚠️ Configure SUPABASE_URL e SUPABASE_KEY para habilitar o armazenamento.")
+        st.warning(
+            "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
+        )
         return
     files = _list_cloud_files()
     if files:

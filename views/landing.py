@@ -37,13 +37,22 @@ def render():
             font-family: 'Montserrat', sans-serif;
             margin: 20px 0 40px 0;
         }
-        .stButton>button {
-            background-color: #3b82f6;
-            color: #ffffff;
-            padding: 0.6rem 2rem;
-            font-size: 1.1rem;
-            border-radius: 8px;
+        .landing-container .stButton {margin-top: 12px;}
+        .landing-container .stButton>button {
+            background: none;
             border: none;
+            color: #ffffff;
+            font-size: 1.25rem;
+            font-family: 'Montserrat', sans-serif;
+            text-decoration: underline;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity .3s ease;
+        }
+        .landing-container:hover .stButton>button {
+            opacity: 1;
+            pointer-events: auto;
+            cursor: pointer;
         }
         </style>
         """,
@@ -53,15 +62,13 @@ def render():
     st.markdown(
         f"""
         <div class="landing-container">
-            {'<img src="data:image/png;base64,'+logo_b64+'" />' if logo_b64 else ''}
+            {'<img src="data:image/png;base64,'+logo_b64+'" class="logo-img"/>' if logo_b64 else ''}
             <h1>Toledo Consultoria</h1>
-        </div>
-        """,
+    """,
         unsafe_allow_html=True,
     )
-
-    _l, c, _r = st.columns([2,1,2])
-    with c:
-        if st.button("Entrar", use_container_width=True):
-            st.session_state.page_state = "login"
-            st.rerun()
+    enter_clicked = st.button("Entrar", key="landing_enter")
+    st.markdown("</div>", unsafe_allow_html=True)
+    if enter_clicked:
+        st.session_state.page_state = "login"
+        st.rerun()
