@@ -49,13 +49,12 @@ def render():
         """,
         unsafe_allow_html=True,
     )
-
     _l, center_col, _r = st.columns([2,1,2])
     with center_col:
         with st.form("login_form"):
             user = st.text_input("Usuário")
             pwd = st.text_input("Senha", type="password")
-            submit = st.form_submit_button("Entrar", use_container_width=True)
+            submit = st.form_submit_button("Entrar", use_container_width=True
 
     if submit:
         if user == USERNAME and pwd == PASSWORD:
@@ -65,7 +64,6 @@ def render():
             st.rerun()
         else:
             st.error("Usuário ou senha inválidos.")
-
     _l, center_col, _r = st.columns([2,1,2])
     with center_col:
         if st.button("Voltar", use_container_width=True):
