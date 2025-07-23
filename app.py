@@ -42,7 +42,18 @@ def main():
         page_icon="title",
         layout="wide"
     )
-
+    TOP_MARGIN = -150
+    st.markdown(f"""
+    <style>
+    .main > div:first-child, .block-container {{
+        margin-top: {TOP_MARGIN}px !important;
+        padding-top: {TOP_MARGIN}px !important;
+    }}
+    section.main {{
+        padding-top: {TOP_MARGIN}px !important;
+    }}
+    </style>
+""", unsafe_allow_html=True)
     if 'page_state' not in st.session_state:
         st.session_state.page_state = 'landing'
         st.session_state.logged_in = False
