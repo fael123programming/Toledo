@@ -67,7 +67,7 @@ def render():
     """,
         unsafe_allow_html=True,
     )
-    enter_clicked = st.button("Entrar", key="landing_enter")
+    enter_clicked = st.button("Entrar", key="landing_enter", use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
     if enter_clicked:
         st.session_state.page_state = "login"
