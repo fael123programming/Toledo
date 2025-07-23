@@ -1,7 +1,8 @@
-from views import whatsapp, sheets, home, docs, landing, login
+from views import whatsapp, sheets, home, docs, login
 import streamlit as st
-import locale
 import warnings
+import locale
+
 
 try:
     locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
@@ -42,26 +43,9 @@ def main():
         page_icon="title",
         layout="wide"
     )
-    TOP_MARGIN = -150
-    st.markdown(f"""
-    <style>
-    .main > div:first-child, .block-container {{
-        margin-top: {TOP_MARGIN}px !important;
-        padding-top: {TOP_MARGIN}px !important;
-    }}
-    section.main {{
-        padding-top: {TOP_MARGIN}px !important;
-    }}
-    </style>
-""", unsafe_allow_html=True)
-    
     if 'page_state' not in st.session_state:
-        st.session_state.page_state = 'landing'
+        st.session_state.page_state = 'login'
         st.session_state.logged_in = False
-
-    if st.session_state.page_state == 'landing':
-        landing.render()
-        return
 
     if not st.session_state.logged_in:
         st.session_state.page_state = 'login'
