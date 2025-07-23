@@ -1,12 +1,12 @@
+from pathlib import Path
 import streamlit as st
 import base64
-from pathlib import Path
+
 
 @st.fragment
 def render():
     logo_path = Path("assets/toledo.png")
     logo_b64 = base64.b64encode(logo_path.read_bytes()).decode() if logo_path.exists() else ""
-
     st.markdown(
         """
         <style>
@@ -17,7 +17,6 @@ def render():
             align-items: center;
             min-height: 90vh;
             text-align: center;
-            background: linear-gradient(-45deg, #1e3a8a, #1e293b, #3b82f6, #1e40af);
             background-size: 300% 300%;
             animation: gradient 8s ease infinite;
         }
