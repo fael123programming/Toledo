@@ -69,7 +69,7 @@ def main():
     with st.sidebar:
         if st.button("Sair", use_container_width=True):
             st.session_state.logged_in = False
-            st.session_state.page_state = "landing"
+            st.session_state.page_state = "login"
             st.rerun()
 
 

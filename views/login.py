@@ -4,6 +4,7 @@ import streamlit as st
 USERNAME = "welton_toledo"
 PASSWORD = "V7#pL9$wXz!F3qRt"
 
+
 @st.fragment
 def render():
     _, center_col, _ = st.columns([2, 2, 2], vertical_alignment='center')
@@ -27,6 +28,3 @@ def render():
                 st.rerun()
             else:
                 st.error("Usuário ou senha inválidos.")
-        if st.button("Voltar", use_container_width=True):
-            st.session_state.page_state = "landing"
-            st.rerun()
