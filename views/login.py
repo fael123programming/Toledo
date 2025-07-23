@@ -18,7 +18,7 @@ def render():
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            min-height: 70vh;
+            min-height: 50vh;
             text-align: center;
         }
         .login-container img {
@@ -47,12 +47,11 @@ def render():
         f"""
         <div class="login-container">
             {'<img src="data:image/png;base64,'+logo_b64+'" />' if logo_b64 else ''}
-            <h2>Área Restrita</h2>
         </div>
         """,
         unsafe_allow_html=True,
     )
-    _l, center_col, _r = st.columns([2, 1, 2])
+    _l, center_col, _r = st.columns([1, 2, 1])
     with center_col:
         with st.form("login_form"):
             user = st.text_input("Usuário")
