@@ -1,5 +1,19 @@
-from views import whatsapp, sheets, home, docs, login
 import streamlit as st
+import os
+
+
+st.set_page_config(
+    page_title="Toledo Consultoria",
+    page_icon="title",
+    layout="wide"
+)
+
+
+st.session_state['SUPABASE_URL'] = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
+st.session_state['SUPABASE_KEY'] = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
+
+
+from views import whatsapp, sheets, home, docs, login
 import warnings
 import locale
 
@@ -38,11 +52,6 @@ PAGES = [
 
 
 def main():
-    st.set_page_config(
-        page_title="Toledo Consultoria",
-        page_icon="title",
-        layout="wide"
-    )
     if 'page_state' not in st.session_state:
         st.session_state.page_state = 'login'
         st.session_state.logged_in = False

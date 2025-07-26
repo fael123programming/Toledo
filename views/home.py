@@ -1,18 +1,18 @@
-import streamlit as st
 import streamlit.components.v1 as components
-import feedparser
-from datetime import datetime
 from urllib.parse import urlparse
+from datetime import datetime
 from pathlib import Path
+import streamlit as st
+import feedparser
 import base64
 
-# ---------- util helpers ----------
+import supabase
+
 
 def img_to_b64(path: str):
     p = Path(path)
     return base64.b64encode(p.read_bytes()).decode() if p.exists() else ""
 
-# ---------- main home view ----------
 
 def render():
     today = datetime.now().strftime("%d de %B de %Y, %H:%M")
@@ -55,10 +55,7 @@ def render():
     </div>
     """
     components.html(hero_html, height=290, scrolling=False)
-
-    # ---------- FEED ----------------------------------------------------
     st.subheader("📰 Manchetes relevantes (Direito • Economia • Política)")
-
     feed = feedparser.parse("https://news.google.com/rss?hl=pt-BR&gl=BR&ceid=BR:pt-419")
     kw = [
         "stf","stj","tse","justiça","tribunal","lei","juríd","advoc","oab",

@@ -1,24 +1,22 @@
 import streamlit.components.v1 as components
-from datetime import datetime
 from supabase import create_client
 from dotenv import load_dotenv
-import httpx
 import plotly.express as px
+from datetime import datetime
 import streamlit as st
 from io import BytesIO
 import pandas as pd
+import httpx
 import uuid
 import os
 
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL") or st.secrets.get("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY") or st.secrets.get("SUPABASE_KEY")
 BUCKET = "planilhas"
 
-auth_ok = bool(SUPABASE_URL and SUPABASE_KEY)
-client = create_client(SUPABASE_URL, SUPABASE_KEY) if auth_ok else None
+auth_ok = bool(st.session_state['SUPABASE_URL'] and st.session_state['SUPABASE_KEY'])
+client = create_client(st.session_state['SUPABASE_URL'], st.session_state['SUPABASE_KEY']) if auth_ok else None
 
 
 def _upload_to_cloud(file) -> bool:
