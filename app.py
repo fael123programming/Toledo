@@ -2,7 +2,6 @@ from utils.supabase_connection import init_supabase_connection
 from streamlit_cookies_manager import EncryptedCookieManager
 from datetime import datetime, timezone
 from gotrue.errors import AuthApiError
-from views import VIEWS
 import streamlit as st
 import locale
 import json
@@ -22,6 +21,34 @@ except locale.Error:
         locale.setlocale(locale.LC_ALL, "")
     except locale.Error:
         pass
+
+
+VIEWS = [
+    {
+        'page': "views/home.py",
+        'title': 'Home',
+        'icon': '🏠',
+        "url_path": "/home"
+    },
+    {
+        'page': "views/sheets.py",
+        'title': 'Planilhas',
+        'icon': '📊',
+        "url_path": "/sheets"
+    },
+    {
+        'page': "views/docs.py",
+        'title': 'Documentos',
+        'icon': '📑',
+        "url_path": "/docs"
+    },
+    {
+        'page': "views/whatsapp.py",
+        'title': 'WhatsApp',
+        'icon': '💬',
+        "url_path": "/whatsapp"
+    }
+]
 
 
 cookies = EncryptedCookieManager(
