@@ -1,3 +1,4 @@
+import pandas as pd
 import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
@@ -63,6 +64,30 @@ def _download_cloud_file(name: str):
     return BytesIO(data) if data else None
 
 
+
+def _worksheet_to_df(name: str):
+    if not client:
+        return None
+    data = client.storage.from_(BUCKET).download(name)
+    if not data:
+        st.error(f"Erro ao baixar {name} do Supabase.")
+        return None
+    buf = BytesIO(data)
+    try:
+        if name.lower().endswith((".xlsx", ".xls")):
+            df = pd.read_excel(buf)
+        else:
+            try:
+                df = pd.read_csv(buf, encoding="utf-8")
+            except UnicodeDecodeError:
+                buf.seek(0)
+                df = pd.read_csv(buf, encoding="latin1")
+        return df
+    except Exception as e:
+        st.error(f"Erro ao ler planilha {name}: {e}")
+        return None
+
+
 @st.fragment
 def download_button(name: str):
     st.download_button(
@@ -97,6 +122,25 @@ def show_delete_confirmation(name: str):
     ):
         if _delete_cloud_file(name):
             st.rerun(scope='app')
+
+
+@st.fragment
+def visu_button(name: str):
+    if st.button(
+        label="⬆️",
+        key=f"visu_{name}",
+        help="Visualizar planilha"
+    ):
+        st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
+        show_worksheet(name)
+
+
+@st.dialog(title="Visualizar Planilha", width="large")
+def show_worksheet(name: str):
+    st.markdown(f"# Dados da planilha {name}")
+    df = _worksheet_to_df(name)
+    if df is not None:
+        st.data_editor(df, use_container_width=True)
 
 
 @st.fragment
@@ -243,20 +287,24 @@ def main():
                 st.warning("Nenhuma planilha encontrada com esse termo.")
         for i, file in enumerate(searched_files):
             with st.container(border=True, key=f'worksheet_container_{i}'):
-                file_name_header_col, download_header_col, del_header_col = st.columns([3, 1, 1], vertical_alignment="center")
+                file_name_header_col, action_header_col = st.columns([3, 1], vertical_alignment="center")
                 with file_name_header_col:
                     st.markdown("**Nome**")
-                with download_header_col:
-                    st.markdown("**Baixar**")
-                with del_header_col:
-                    st.markdown("**Deletar**")
-                file_name_col, download_col, del_col = st.columns([3, 1, 1], vertical_alignment="center")
+                with action_header_col:
+                    _, action_name_col, _ = st.columns(3, vertical_alignment="center")
+                    with action_name_col:
+                        st.markdown("**Ações**")
+                file_name_col, action_col = st.columns([3, 1], vertical_alignment="center")
                 with file_name_col:
                     st.markdown(file)
-                with download_col:
-                    download_button(file)
-                with del_col:
-                    del_button(file)
+                with action_col:
+                    visu_col, download_col, del_col = st.columns(3, vertical_alignment="center")
+                    with visu_col:
+                        visu_button(file)
+                    with download_col:
+                        download_button(file)
+                    with del_col:
+                        del_button(file)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload para começar.")
         upload_button()
