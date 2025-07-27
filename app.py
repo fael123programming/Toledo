@@ -80,6 +80,7 @@ def logout():
     st.session_state.pop('user_data', None)
     cookies['user_data'] = ''
     cookies.save()
+    st.sidebar.empty()
     st.rerun()
 
 
@@ -117,7 +118,7 @@ def main():
             with st.form("login_form"):
                 email = st.text_input("E-mail", key='login_email')
                 pwd = st.text_input("Senha", key='password_key', type="password")
-                remember_me = st.checkbox("Lembrar-me", key='remember_me')
+                remember_me = st.checkbox("Lembrar-me", key='remember_me', value=True)
                 submit = st.form_submit_button(
                     "Entrar", 
                     use_container_width=True, 

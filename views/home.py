@@ -13,7 +13,15 @@ def img_to_b64(path: str):
 
 
 def main():
+    months = {
+        "January": "Janeiro", "February": "Fevereiro", "March": "Março",
+        "April": "Abril", "May": "Maio", "June": "Junho",
+        "July": "Julho", "August": "Agosto", "September": "Setembro",
+        "October": "Outubro", "November": "Novembro", "December": "Dezembro"
+    }
     today = datetime.now().strftime("%d de %B de %Y, %H:%M")
+    for en, pt in months.items():
+        today = today.replace(en, pt)
     try:
       st.write(f"**Logado como {st.session_state['user_data']['email']}**")
     except:
