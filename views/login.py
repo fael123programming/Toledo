@@ -47,7 +47,7 @@ def render():
         return
     _, center_col, _ = st.columns([2, 2, 2], vertical_alignment='center')
     with center_col:
-        st.markdown("# Seja muito bem-vindo(a) ao Toledo!")
+        st.header("Seja muito bem-vindo(a) ao Toledo!")
         _, center_2_col, _ = st.columns([1, 3, 1], vertical_alignment='center')
         with center_2_col:
             st.image("assets/toledo.png", width=200)
@@ -82,6 +82,7 @@ def render():
                         st.error("Falha no login. Verifique suas credenciais.")
             except AuthApiError as e:
                 st.error("Usuário ou senha inválidos.")
+                st.error(e)
             except Exception as e:
                 error_msg = str(e).lower()
                 if "name or service not known" in error_msg:
