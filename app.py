@@ -1,3 +1,4 @@
+from views.login import logout
 import streamlit as st
 import os
 
@@ -52,6 +53,7 @@ PAGES = [
 
 
 def main():
+
     if 'page_state' not in st.session_state:
         st.session_state.page_state = 'login'
         st.session_state.logged_in = False
@@ -74,11 +76,11 @@ def main():
         position="sidebar"
     )
     selected.run()
-
     with st.sidebar:
         if st.button("Sair", use_container_width=True):
             st.session_state.logged_in = False
             st.session_state.page_state = "login"
+            logout()
             st.rerun()
 
 
