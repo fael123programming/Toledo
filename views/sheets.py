@@ -1,22 +1,18 @@
 import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
-import plotly.express as px
-from datetime import datetime
 import streamlit as st
 from io import BytesIO
-import pandas as pd
 import httpx
 import uuid
-import os
 
 
 load_dotenv()
 
 BUCKET = "planilhas"
 
-auth_ok = bool(st.session_state['SUPABASE_URL'] and st.session_state['SUPABASE_KEY'])
-client = create_client(st.session_state['SUPABASE_URL'], st.session_state['SUPABASE_KEY']) if auth_ok else None
+auth_ok = bool(st.secrets["connections"]["supabase"]["SUPABASE_URL"] and st.secrets["connections"]["supabase"]["SUPABASE_KEY"])
+client = create_client(st.secrets["connections"]["supabase"]["SUPABASE_URL"], st.secrets["connections"]["supabase"]["SUPABASE_KEY"]) if auth_ok else None
 
 
 def _upload_to_cloud(file) -> bool:
@@ -133,8 +129,7 @@ def show_upload_dialog():
             st.rerun(scope='app')
 
 
-@st.fragment
-def render():
+def main():
     html = """
     <style>
     /* Cloud backdrop - soft wave */
@@ -282,3 +277,6 @@ def render():
     #                 if _delete_cloud_file(sel):
     #                     st.success("Arquivo removido.")
     #                     st.rerun(scope='app')
+
+
+main()

@@ -6,15 +6,13 @@ import streamlit as st
 import feedparser
 import base64
 
-import supabase
-
 
 def img_to_b64(path: str):
     p = Path(path)
     return base64.b64encode(p.read_bytes()).decode() if p.exists() else ""
 
 
-def render():
+def main():
     today = datetime.now().strftime("%d de %B de %Y, %H:%M")
     logo_b64 = img_to_b64("assets/toledo.png")
     hero_html = f"""
@@ -129,3 +127,6 @@ def render():
     </script>
     """
     components.html(slider_html, height=220, scrolling=False)
+
+
+main()

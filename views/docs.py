@@ -22,8 +22,7 @@ def summarize_text(text: str, num_sentences: int = 3) -> str:
     return " ".join(sentences[j] for j in sorted(top_idxs))
 
 
-@st.fragment
-def render():
+def main():
     tabs = st.tabs(["📑 Resumir PDF", "📝 Resumir DOCX"])
     with tabs[0]:
         pdf_file = st.file_uploader("Envie um PDF", type=["pdf"])
@@ -41,3 +40,6 @@ def render():
             summary = summarize_text(text, num_sentences=4)
             st.subheader("Resumo")
             st.write(summary)
+
+
+main()
