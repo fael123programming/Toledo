@@ -126,7 +126,7 @@ def main():
                 )
             if submit and email and pwd:
                 try:
-                    with st.spinner("Realizando login..."):
+                    with st.spinner(""):
                         if hasattr(sb, 'client'):
                             resp = sb.client.auth.sign_in_with_password({
                                 'email': email, 
