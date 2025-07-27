@@ -11,8 +11,8 @@ def init_supabase_connection():
     retry_delay = 2
     for attempt in range(max_retries):
         try:
-            supabase_url = st.secrets.get("SUPABASE_URL") or os.getenv("SUPABASE_URL")
-            supabase_key = st.secrets.get("SUPABASE_KEY") or os.getenv("SUPABASE_KEY")
+            supabase_url = st.secrets["connections"]["supabase"]["SUPABASE_URL"]
+            supabase_key = st.secrets["connections"]["supabase"]["SUPABASE_KEY"]
             if not supabase_url or not supabase_key:
                 st.error("Variáveis SUPABASE_URL e SUPABASE_KEY não configuradas")
                 return None
