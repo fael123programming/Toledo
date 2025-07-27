@@ -63,19 +63,17 @@ if not cookies.ready():
 def initialize_session():
     if "user_data" not in st.session_state:
         try:
-            user_data = json.loads(cookies.get("user_data"))
-            if user_data:
-                st.session_state['user_data'] = user_data
-                st.session_state["logged_in"] = True
-                st.session_state["page_state"] = "app"
+            user_json = cookies.get("user_data")
+            if user_json:
+                try:
+                    user_dict = json.loads(user_json)
+                    st.session_state['user_data'] = user_dict
+                except (json.JSONDecodeError, TypeError, ValueError):
+                    st.session_state['user_data'] = None
             else:
                 st.session_state['user_data'] = None
-                st.session_state['login_timestamp'] = None
-                st.session_state["logged_in"] = False
-                st.session_state["page_state"] = "login"
         except json.JSONDecodeError:
             st.session_state['user_data'] = None
-            st.session_state["logged_in"] = False
 
 
 def logout():
