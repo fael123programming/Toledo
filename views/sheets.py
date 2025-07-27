@@ -236,28 +236,27 @@ def main():
             placeholder="Digite o nome da planilha...",
             key="search_sheets"
         )
+        searched_files = files
         if search_query:
-            files = [f for f in files if search_query.lower() in f.lower()]
-            if files:
+            searched_files = [f for f in files if search_query.lower() in f.lower()]
+            if not searched_files:
                 st.warning("Nenhuma planilha encontrada com esse termo.")
-                for i, file in enumerate(files):
-                    with st.container(border=True, key=f'worksheet_container_{i}'):
-                        file_name_header_col, download_header_col, del_header_col = st.columns([3, 1, 1], vertical_alignment="center")
-                        with file_name_header_col:
-                            st.markdown("**Nome**")
-                        with download_header_col:
-                            st.markdown("**Baixar**")
-                        with del_header_col:
-                            st.markdown("**Deletar**")
-                        file_name_col, download_col, del_col = st.columns([3, 1, 1], vertical_alignment="center")
-                        with file_name_col:
-                            st.markdown(file)
-                        with download_col:
-                            download_button(file)
-                        with del_col:
-                            del_button(file)
-            else:
-                st.warning("Nenhuma planilha encontrada com esse termo.")
+        for i, file in enumerate(searched_files):
+            with st.container(border=True, key=f'worksheet_container_{i}'):
+                file_name_header_col, download_header_col, del_header_col = st.columns([3, 1, 1], vertical_alignment="center")
+                with file_name_header_col:
+                    st.markdown("**Nome**")
+                with download_header_col:
+                    st.markdown("**Baixar**")
+                with del_header_col:
+                    st.markdown("**Deletar**")
+                file_name_col, download_col, del_col = st.columns([3, 1, 1], vertical_alignment="center")
+                with file_name_col:
+                    st.markdown(file)
+                with download_col:
+                    download_button(file)
+                with del_col:
+                    del_button(file)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload para começar.")
         upload_button()
