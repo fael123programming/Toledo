@@ -47,6 +47,7 @@ def render():
         return
     _, center_col, _ = st.columns([2, 2, 2], vertical_alignment='center')
     with center_col:
+        st.markdown("# Seja muito bem-vindo(a) ao Toledo!")
         _, center_2_col, _ = st.columns([1, 3, 1], vertical_alignment='center')
         with center_2_col:
             st.image("assets/toledo.png", width=200)
