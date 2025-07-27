@@ -14,6 +14,7 @@ def img_to_b64(path: str):
 
 def main():
     today = datetime.now().strftime("%d de %B de %Y, %H:%M")
+    st.write(f"**Logado como {st.session_state['user_data']['email']}**")
     logo_b64 = img_to_b64("assets/toledo.png")
     hero_html = f"""
     <style>
