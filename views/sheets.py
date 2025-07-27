@@ -228,7 +228,7 @@ def main():
         return
     files = _list_cloud_files()
     if files:
-        _, upload_col = st.columns([10, 2], vertical_alignment="center")
+        _, upload_col = st.columns([10, 3], vertical_alignment="center")
         with upload_col:
             upload_button()
         search_query = st.text_input(
