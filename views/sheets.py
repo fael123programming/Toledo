@@ -137,10 +137,35 @@ def visu_button(name: str):
 
 @st.dialog(title="Visualizar Planilha", width="large")
 def show_worksheet(name: str):
-    st.markdown(f"# Dados da planilha {name}")
+    st.markdown(f"# Planilha {name}")
     df = _worksheet_to_df(name)
-    if df is not None:
-        st.data_editor(df, use_container_width=True)
+    if df is None:
+        st.error("Erro ao ler a planilha.")
+        return
+    df_edited = st.data_editor(
+        df,
+        key=f"data_editor_{name}_{st.session_state.dialog_postfix}",
+        use_container_width=True,
+        hide_index=True,
+    )
+    if st.button(
+        "Salvar Alterações",
+        key=f"save_button_{name}_{st.session_state.dialog_postfix}",
+        disabled=df_edited.equals(df)
+    ):
+        try:
+            buf = BytesIO()
+            if name.lower().endswith((".xlsx", ".xls")):
+                df_edited.to_excel(buf, index=False)
+            else:
+                df_edited.to_csv(buf, index=False)
+            buf.name = name
+            _delete_cloud_file(name)
+            if _upload_to_cloud(buf):
+                st.success(f"Alterações salvas em {name}!")
+                st.rerun(scope="app")
+        except Exception as e:
+            st.error(f"Erro ao salvar alterações: {e}")
 
 
 @st.fragment
@@ -270,19 +295,20 @@ def main():
             "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
         )
         return
-    files = _list_cloud_files()
-    if files:
+    st.session_state.files = _list_cloud_files()
+    if st.session_state.files:
         _, upload_col = st.columns([10, 3], vertical_alignment="center")
         with upload_col:
             upload_button()
-        search_query = st.text_input(
-            "🔍 Pesquisar planilhas",
-            placeholder="Digite o nome da planilha...",
-            key="search_sheets"
-        )
-        searched_files = files
+        with st.container(border=True):
+            search_query = st.text_input(
+                "🔍 Pesquisar planilhas",
+                placeholder="Digite o nome da planilha...",
+                key="search_sheets"
+            )
+        searched_files = st.session_state.files
         if search_query:
-            searched_files = [f for f in files if search_query.lower() in f.lower()]
+            searched_files = [f for f in st.session_state.files if search_query.lower() in f.lower()]
             if not searched_files:
                 st.warning("Nenhuma planilha encontrada com esse termo.")
         for i, file in enumerate(searched_files):
