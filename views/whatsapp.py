@@ -41,6 +41,7 @@ def main():
         )
         return
     st.write(st.session_state["ultramsg_vars"])
+    st.write(os.environ)
 
 
 main()
