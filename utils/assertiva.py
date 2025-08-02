@@ -50,8 +50,8 @@ def get_latest_phone_by_name(full_name: str) -> Optional[str]:
 def check_assertiva_access() -> tuple[bool, str]:
     try:
         _get_access_token()
-    except requests.HTTPError as e:
-        if e.response.status_code == 403 and "horario" in e.response.text.lower():
-            return False, 'Sem permissão para acessar a Assertiva neste horário.'
+    except Exception as e:
+        # return False, 'Sem permissão para acessar a Assertiva neste horário.'
+        return False, str(e)
     else:
         return True, 'Acesso permitido.'
