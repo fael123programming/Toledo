@@ -96,14 +96,28 @@ def _worksheet_to_df(name: str) -> Optional[pd.DataFrame]:
 
 @st.fragment
 def download_button(name: str):
-    st.download_button(
-        label="🡇",
-        data=_download_cloud_file(name),
-        file_name=name,
-        mime="application/octet-stream",
-        key=f"download_{name}",
-        help="Baixar planilha"
-    )
+    if f'gen_down_btn_{name}' in st.session_state and st.session_state[f'gen_down_btn_{name}']:
+        with st.spinner(''):
+            st.session_state[f'gen_down_btn_{name}_bytes'] = _download_cloud_file(name)
+            st.session_state[f'gen_down_btn_{name}'] = False
+        st.download_button(
+            label="🡇",
+            data=st.session_state[f'gen_down_btn_{name}_bytes'],
+            file_name=name,
+            mime="application/octet-stream",
+            key=f"download_{name}",
+            help="Baixar planilha",
+            type="primary"
+        )
+    else:
+        gen_down_btn = st.button(
+            label="🡇",
+            key=f"gen_down_btn_{name}",
+            help="Gerar botão de download"
+        )
+        if gen_down_btn:
+            st.session_state[f'gen_down_btn_{name}'] = True
+            st.rerun(scope='fragment')
 
 
 @st.fragment
@@ -340,28 +354,6 @@ def main():
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload para começar.")
         upload_button()
-    #     st.markdown("#### Upload para nuvem")
-    #     new_file = st.file_uploader("Selecionar arquivo", type=["csv", "xlsx"], key="cloud_upload")
-    #     if new_file and st.button("Enviar para Supabase", type="primary"):
-    #         if _upload_to_cloud(new_file):
-    #             st.success(f"{new_file.name} enviado!")
-    #             # st.rerun(scope='app')
-    # with col_manage:
-    #     st.markdown("#### Arquivos no bucket")
-    #     if not files:
-    #         st.info("Nenhuma planilha armazenada.")
-    #     else:
-    #         sel = st.selectbox("Selecionar arquivo", files)
-    #         action = st.radio("Ação", ["Baixar", "Remover"], horizontal=True)
-    #         if st.button("Executar"):
-    #             if action == "Baixar":
-    #                 data = _download_cloud_file(sel)
-    #                 if data:
-    #                     st.download_button("Download", data=data, mime="application/octet-stream", file_name=sel)
-    #             else:
-    #                 if _delete_cloud_file(sel):
-    #                     st.success("Arquivo removido.")
-    #                     st.rerun(scope='app')
 
 
 main()
