@@ -237,7 +237,7 @@ def show_upload_dialog():
 
 
 def main():
-    st.markdown("# Planilhas na Nuvem")
+    st.markdown("# 📈 Planilhas na Nuvem")
     st.subheader("Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
         st.warning(
