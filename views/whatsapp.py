@@ -27,7 +27,7 @@ def main():
     st.markdown("# 🟩 WhatsApp")
     st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
     st.write(st.session_state["ultramsg_vars"])
-    st.write(st.secrets["ultramsg"])
+    st.write(st.secrets["ultramsg_number_1"])
     if not st.session_state["ultramsg_vars"]:
         st.warning(
             "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
