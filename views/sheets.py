@@ -186,7 +186,8 @@ def show_worksheet(df, name: str):
         df,
         key=f"data_editor_{name}_{st.session_state.dialog_postfix}",
         use_container_width=True,
-        hide_index=True
+        hide_index=True,
+        num_rows="dynamic"
     )
     if st.button(
         "Salvar Alterações",
