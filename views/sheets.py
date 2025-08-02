@@ -1,14 +1,10 @@
 from utils import assertiva, algorithms
 from supabase import create_client
 from dotenv import load_dotenv
-from typing import Optional
+from utils import worksheets
 import streamlit as st
 from io import BytesIO
-import pandas as pd
-import requests
-import httpx
 import uuid
-import time
 
 
 load_dotenv()
@@ -19,86 +15,11 @@ auth_ok = bool(st.secrets["connections"]["supabase"]["SUPABASE_URL"] and st.secr
 client = create_client(st.secrets["connections"]["supabase"]["SUPABASE_URL"], st.secrets["connections"]["supabase"]["SUPABASE_KEY"]) if auth_ok else None
 
 
-def _upload_to_cloud(file) -> bool:
-    if not client:
-        return False
-    try:
-        data = file.getvalue()
-        client.storage.from_(BUCKET).upload(file.name, data)
-        return True
-    except Exception as e:
-        st.error(f"Erro Supabase: {e}")
-        return False
-
-
-def _list_cloud_files() -> list[str]:
-    if not client:
-        return []
-    try:
-        objs = client.storage.from_(BUCKET).list("")
-    except httpx.HTTPError as e:
-        st.error(f"Erro de conexão com Supabase: {e}")
-        return []
-    except Exception as e:
-        st.error(f"Erro Supabase: {e}")
-        return []
-    return [
-        obj["name"] for obj in objs
-        if obj["name"] not in [".emptyFolderPlaceholder", "."]
-        and not obj["name"].endswith("/")
-    ]
-
-
-def _delete_cloud_file(name: str) -> bool:
-    if not client:
-        return False
-    try:
-        client.storage.from_(BUCKET).remove(name)
-        return True
-    except Exception as e:
-        st.error(f"Erro Supabase: {e}")
-        return False
-
-
-def _download_cloud_file(name: str) -> Optional[BytesIO]:
-    try:
-        signed = client.storage.from_(BUCKET).create_signed_url(name, 60)
-        url = signed["signedURL"]
-        url = f"{url}&v={int(time.time())}"
-        r = requests.get(url, headers={"Cache-Control": "no-cache"})
-        r.raise_for_status()
-        return BytesIO(r.content) if r.content else None
-    except Exception as e:
-        st.error(f"Erro ao baixar {name}: {e}")
-        return None
-
-
-def _worksheet_to_df(name: str) -> Optional[pd.DataFrame]:
-    if not client:
-        return None
-    try:
-        buf = _download_cloud_file(name)
-        if buf is None:
-            return None
-        if name.lower().endswith((".xlsx", ".xls")):
-            df = pd.read_excel(buf)
-        else:
-            try:
-                df = pd.read_csv(buf, encoding="utf-8")
-            except UnicodeDecodeError:
-                buf.seek(0)
-                df = pd.read_csv(buf, encoding="latin1")
-        return df
-    except Exception as e:
-        st.error(f"Erro ao baixar {name}: {e}")
-        return None
-
-
 @st.fragment
 def download_button(name: str):
     if f'gen_down_btn_{name}' in st.session_state and st.session_state[f'gen_down_btn_{name}']:
         with st.spinner(''):
-            st.session_state[f'gen_down_btn_{name}_bytes'] = _download_cloud_file(name)
+            st.session_state[f'gen_down_btn_{name}_bytes'] = worksheets.download_cloud_file(name)
             st.session_state[f'gen_down_btn_{name}'] = False
         st.download_button(
             label="🡇",
@@ -140,7 +61,7 @@ def show_delete_confirmation(name: str):
         type="primary",
         use_container_width=True
     ):
-        if _delete_cloud_file(name):
+        if worksheets.delete_cloud_file(name):
             st.rerun(scope='app')
 
 
@@ -152,7 +73,7 @@ def visu_button(name: str):
         help="Visualizar planilha"
     ):
         st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
-        df = _worksheet_to_df(name)
+        df = worksheets.worksheet_to_df(name)
         show_worksheet(df, name)
 
 
@@ -201,8 +122,8 @@ def show_worksheet(df, name: str):
             else:
                 df_edited.to_csv(buf, index=False)
             buf.name = name
-            _delete_cloud_file(name)
-            if _upload_to_cloud(buf):
+            worksheets.delete_cloud_file(name)
+            if worksheets.upload_to_cloud(buf):
                 st.success(f"Alterações salvas em {name}!")
                 st.rerun(scope="app")
         except Exception as e:
@@ -234,7 +155,7 @@ def show_upload_dialog():
         type="primary",
         use_container_width=True
     ):
-        if _upload_to_cloud(new_file):
+        if worksheets.upload_to_cloud(new_file):
             st.success(f"{new_file.name} enviado!")
             st.rerun(scope='app')
 
@@ -247,7 +168,7 @@ def main():
             "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
         )
         return
-    st.session_state.files = _list_cloud_files()
+    st.session_state.files = worksheets.list_cloud_files()
     if st.session_state.files:
         _, upload_col = st.columns([10, 3], vertical_alignment="center")
         with upload_col:

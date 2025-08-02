@@ -1,5 +1,5 @@
+from utils import worksheets
 import streamlit as st
-import os
 
 
 def load_ultramsg_env():
@@ -38,6 +38,10 @@ def main():
             help="Este é o número de telefone que enviará as mensagens.",
             disabled=True
         )
-
+    st.session_state.files = worksheets.list_cloud_files()
+    if st.session_state.files:
+        st.write(st.session_state.files)
+    else:
+        st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
 main()
