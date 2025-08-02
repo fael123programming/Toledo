@@ -61,7 +61,7 @@ def _clean(s: str) -> str:
 
 def score_series(s: pd.Series) -> float:
     n = len(s)
-    sample = s.dropna().astype(str).sample(500)
+    sample = s.dropna().astype(str).head(500)
     if sample.empty:
         return 0.0
     non_null = sample.size / n
