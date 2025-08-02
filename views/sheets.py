@@ -152,13 +152,13 @@ def visu_button(name: str):
         help="Visualizar planilha"
     ):
         st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
-        show_worksheet(name)
+        df = _worksheet_to_df(name)
+        show_worksheet(df, name)
 
 
 @st.dialog(title="Visualizar Planilha", width="large")
-def show_worksheet(name: str):
+def show_worksheet(df, name: str):
     st.markdown(f"# Planilha {name}")
-    df = _worksheet_to_df(name)
     if df is None:
         st.error("Erro ao ler a planilha.")
         return
