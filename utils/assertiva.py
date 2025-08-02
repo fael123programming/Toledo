@@ -50,8 +50,7 @@ def get_latest_phone_by_name(full_name: str) -> Optional[str]:
 def check_assertiva_access() -> tuple[bool, str]:
     try:
         _get_access_token()
-    except Exception as e:
-        # return False, 'Sem permissão para acessar a Assertiva neste horário.'
-        return False, str(e)
+    except:
+        return False, 'Sem permissão para acessar a Assertiva neste horário.'
     else:
         return True, 'Acesso permitido.'
