@@ -1,11 +1,13 @@
-import pandas as pd
 import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
 import streamlit as st
 from io import BytesIO
+import pandas as pd
+import requests
 import httpx
 import uuid
+import time
 
 
 load_dotenv()
@@ -64,16 +66,16 @@ def _download_cloud_file(name: str):
     return BytesIO(data) if data else None
 
 
-
 def _worksheet_to_df(name: str):
     if not client:
         return None
-    data = client.storage.from_(BUCKET).download(name)
-    if not data:
-        st.error(f"Erro ao baixar {name} do Supabase.")
-        return None
-    buf = BytesIO(data)
     try:
+        signed = client.storage.from_(BUCKET).create_signed_url(name, 60)
+        url = signed["signedURL"]
+        url = f"{url}&v={int(time.time())}"
+        r = requests.get(url, headers={"Cache-Control": "no-cache"})
+        r.raise_for_status()
+        buf = BytesIO(r.content)
         if name.lower().endswith((".xlsx", ".xls")):
             df = pd.read_excel(buf)
         else:
@@ -84,7 +86,7 @@ def _worksheet_to_df(name: str):
                 df = pd.read_csv(buf, encoding="latin1")
         return df
     except Exception as e:
-        st.error(f"Erro ao ler planilha {name}: {e}")
+        st.error(f"Erro ao baixar {name}: {e}")
         return None
 
 
