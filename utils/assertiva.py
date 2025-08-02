@@ -53,6 +53,5 @@ def check_assertiva_access() -> tuple[bool, str]:
     except requests.HTTPError as e:
         if e.response.status_code == 403 and "horario" in e.response.text.lower():
             return False, 'Sem permissão para acessar a Assertiva neste horário.'
-        raise
     else:
         return True, 'Acesso permitido.'
