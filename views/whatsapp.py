@@ -22,7 +22,7 @@ def main():
         st.warning(
             "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
         )
-    owner_col, phone_number_col = st.columns(2, vertical_alignment="bottom")
+    owner_col, phone_number_col = st.columns(2, vertical_alignment="center")
     with owner_col:
         owner_col_select = st.selectbox(
             "📞 Selecione o remetente",
