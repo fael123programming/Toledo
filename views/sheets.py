@@ -238,7 +238,7 @@ def show_upload_dialog():
 
 def main():
     st.markdown("# 📈 Planilhas na Nuvem")
-    st.subheader("Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
+    st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
         st.warning(
             "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
