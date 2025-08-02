@@ -33,7 +33,7 @@ def main():
     with phone_number_col:
         phone_number = st.text_input(
             "📱 Número de telefone",
-            value=st.session_state["ultramsg_vars"][owner_col_select]["PHONE_NUMBER"],
+            value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
             key="phone_number_input",
             help="Número de telefone para enviar mensagens.",
             disabled=True
