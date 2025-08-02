@@ -1,6 +1,7 @@
 import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
+from utils import assertiva
 from typing import Optional
 import streamlit as st
 from io import BytesIO
@@ -162,11 +163,31 @@ def show_worksheet(df, name: str):
     if df is None:
         st.error("Erro ao ler a planilha.")
         return
+    cols = df.columns.tolist()
+    may_access, msg = assertiva.check_assertiva_access()
+    col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="center")
+    with col_name_col:
+        col_name = st.selectbox(
+            'Nome da coluna',
+            options=cols,
+            key=f"col_name_{name}_{st.session_state.dialog_postfix}",
+            help="Selecione a coluna que contém os nomes completos",
+            disabled=not may_access
+        )
+    with search_assertiva_col:
+        search_assertiva = st.button(
+            "🔍 Buscar Telefone",
+            key=f"search_assertiva_{name}_{st.session_state.dialog_postfix}",
+            help="Buscar telefone mais recente usando Assertiva",
+            disabled=not may_access
+        )
+    if not may_access:
+        st.warning(msg)
     df_edited = st.data_editor(
         df,
         key=f"data_editor_{name}_{st.session_state.dialog_postfix}",
         use_container_width=True,
-        hide_index=True,
+        hide_index=True
     )
     if st.button(
         "Salvar Alterações",
