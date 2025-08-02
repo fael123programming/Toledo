@@ -26,7 +26,7 @@ def main():
     with owner_col:
         owner_col_select = st.selectbox(
             "📞 Selecione o número de telefone",
-            options=list(st.session_state["ultramsg_vars"].keys()),
+            options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
             key="phone_number_select",
             help="Selecione o número de telefone para enviar mensagens."
         )
