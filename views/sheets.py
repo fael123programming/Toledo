@@ -1,4 +1,3 @@
-import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
 from utils import assertiva
@@ -238,97 +237,8 @@ def show_upload_dialog():
 
 
 def main():
-    html = """
-    <style>
-    /* Cloud backdrop - soft wave */
-    .cloud-bg {
-    width: 100%;
-    min-height: 110px;
-    background: linear-gradient(110deg, #e0e7ff 10%, #f1f5f9 100%);
-    position: relative;
-    margin-bottom: 28px;
-    border-radius: 48px 48px 16px 16px/36px 36px 12px 12px;
-    overflow: hidden;
-    box-shadow: 0 8px 30px 0 rgba(82, 99, 171, 0.09);
-    }
-    @media (prefers-color-scheme: dark) {
-    .cloud-bg {
-        background: linear-gradient(120deg, #202646 40%, #1e293b 100%);
-        box-shadow: 0 6px 30px 0 rgba(20,30,50,0.26);
-    }
-    }
-
-    /* Title - gradient text */
-    .cloud-title {
-    font-family: 'Montserrat', sans-serif;
-    font-weight: 800;
-    font-size: 2.1rem;
-    background: linear-gradient(90deg, #647acb 30%, #6366f1 100%);
-    background-clip: text;
-    -webkit-background-clip: text;
-    color: transparent;
-    margin: 0 0 16px 0;
-    letter-spacing: -1px;
-    padding-top: 32px;
-    padding-left: 48px;
-    padding-bottom: 2px;
-    }
-    @media (prefers-color-scheme: dark) {
-    .cloud-title {
-        background: linear-gradient(90deg, #a5b4fc 25%, #60a5fa 90%);
-    }
-    }
-
-    /* Subtext - icon + faded text */
-    .cloud-sub {
-    font-size: 1.03rem;
-    color: #475569;
-    padding-left: 52px;
-    margin-bottom: 24px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    }
-    @media (prefers-color-scheme: dark) {
-    .cloud-sub { color: #cbd5e1; }
-    }
-
-    /* Floating SVG Cloud Decoration */
-    .cloud-svg {
-    position: absolute;
-    left: 0; top: 0; z-index: 0;
-    width: 250px; height: 90px;
-    opacity: 0.15;
-    }
-    @media (max-width: 600px) {
-    .cloud-title, .cloud-sub { padding-left: 18px;}
-    .cloud-title { font-size: 1.25rem; }
-    .cloud-bg { border-radius: 24px 24px 10px 10px; }
-    }
-    </style>
-    <div class="cloud-bg">
-    <svg class="cloud-svg" viewBox="0 0 250 90" fill="none">
-        <ellipse cx="90" cy="65" rx="90" ry="20" fill="#b6c6f7"/>
-        <ellipse cx="170" cy="45" rx="60" ry="14" fill="#e0e8f7"/>
-    </svg>
-    <div style="position:relative;z-index:1;">
-        <div class="cloud-title">
-        <span>Gerencie suas planilhas na nuvem</span>
-        </div>
-        <div class="cloud-sub">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-            <path d="M16 16v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h2" stroke="#647acb" stroke-width="1.6" stroke-linecap="round"/>
-            <path d="M21 15V5a2 2 0 0 0-2-2H10a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h9a2 2 0 0 0 2-2Z" stroke="#6366f1" stroke-width="1.6"/>
-            <path d="m16 8.5-2.5 2.5L16 13.5" stroke="#6366f1" stroke-width="1.6" stroke-linecap="round"/>
-        </svg>
-        <span>
-            Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.
-        </span>
-        </div>
-    </div>
-    </div>
-    """
-    components.html(html, height=180)
+    st.markdown("# Planilhas na Nuvem")
+    st.subheader("Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
         st.warning(
             "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
