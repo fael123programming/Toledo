@@ -22,6 +22,22 @@ def main():
         st.warning(
             "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
         )
+    owner_col, phone_number_col = st.columns(2, vertical_alignment="bottom")
+    with owner_col:
+        owner_col_select = st.selectbox(
+            "📞 Selecione o número de telefone",
+            options=list(st.session_state["ultramsg_vars"].keys()),
+            key="phone_number_select",
+            help="Selecione o número de telefone para enviar mensagens."
+        )
+    with phone_number_col:
+        phone_number = st.text_input(
+            "📱 Número de telefone",
+            value=st.session_state["ultramsg_vars"][owner_col_select]["PHONE_NUMBER"],
+            key="phone_number_input",
+            help="Número de telefone para enviar mensagens.",
+            disabled=True
+        )
 
 
 main()
