@@ -46,6 +46,9 @@ def main():
             key="worksheet_whatsapp_select",
             help="Selecione a planilha para enviar as mensagens."
         )
+        with st.spinner(''):
+            df = worksheets.worksheet_to_df(owner_col_select)
+            st.dataframe(df, use_container_width=True, hide_index=True)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
