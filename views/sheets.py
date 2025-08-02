@@ -166,6 +166,7 @@ def show_worksheet(df, name: str):
     may_access, msg = assertiva.check_assertiva_access()
     col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
     detected_col = algorithms.detect_name_column(df)
+    st.write(detected_col)
     with col_name_col:
         col_name = st.selectbox(
             'Nome da coluna',
