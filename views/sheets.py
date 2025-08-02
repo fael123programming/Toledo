@@ -1,6 +1,7 @@
 import streamlit.components.v1 as components
 from supabase import create_client
 from dotenv import load_dotenv
+from typing import Optional
 import streamlit as st
 from io import BytesIO
 import pandas as pd
@@ -59,23 +60,26 @@ def _delete_cloud_file(name: str) -> bool:
         return False
 
 
-def _download_cloud_file(name: str):
-    if not client:
-        return None
-    data = client.storage.from_(BUCKET).download(name)
-    return BytesIO(data) if data else None
-
-
-def _worksheet_to_df(name: str):
-    if not client:
-        return None
+def _download_cloud_file(name: str) -> Optional[BytesIO]:
     try:
         signed = client.storage.from_(BUCKET).create_signed_url(name, 60)
         url = signed["signedURL"]
         url = f"{url}&v={int(time.time())}"
         r = requests.get(url, headers={"Cache-Control": "no-cache"})
         r.raise_for_status()
-        buf = BytesIO(r.content)
+        return BytesIO(r.content) if r.content else None
+    except Exception as e:
+        st.error(f"Erro ao baixar {name}: {e}")
+        return None
+
+
+def _worksheet_to_df(name: str) -> Optional[pd.DataFrame]:
+    if not client:
+        return None
+    try:
+        buf = _download_cloud_file(name)
+        if buf is None:
+            return None
         if name.lower().endswith((".xlsx", ".xls")):
             df = pd.read_excel(buf)
         else:
