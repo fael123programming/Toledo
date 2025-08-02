@@ -165,7 +165,7 @@ def show_worksheet(df, name: str):
         return
     cols = df.columns.tolist()
     may_access, msg = assertiva.check_assertiva_access()
-    col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="center")
+    col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
     with col_name_col:
         col_name = st.selectbox(
             'Nome da coluna',
