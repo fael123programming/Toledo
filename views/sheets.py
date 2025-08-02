@@ -171,18 +171,16 @@ def show_worksheet(df, name: str):
             'Nome da coluna',
             options=cols,
             key=f"col_name_{name}_{st.session_state.dialog_postfix}",
-            help="Selecione a coluna que contém os nomes completos",
+            help="Selecione a coluna que contém os nomes completos" if may_access else msg,
             disabled=not may_access
         )
     with search_assertiva_col:
         search_assertiva = st.button(
             "🔍 Buscar Telefone",
             key=f"search_assertiva_{name}_{st.session_state.dialog_postfix}",
-            help="Buscar telefone mais recente usando Assertiva",
+            help="Buscar telefone mais recente usando Assertiva" if may_access else msg,
             disabled=not may_access
         )
-    if not may_access:
-        st.warning(msg)
     df_edited = st.data_editor(
         df,
         key=f"data_editor_{name}_{st.session_state.dialog_postfix}",
