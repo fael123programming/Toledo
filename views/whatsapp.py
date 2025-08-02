@@ -26,6 +26,7 @@ def main():
     # load_ultramsg_env()
     st.markdown("# 🟩 WhatsApp")
     st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
+    st.write(st.secrets)
     all_ultramsg = st.secrets["ultramsg"].to_dict()
     for chave, creds in all_ultramsg.items():
         st.write(f"Identificador: {chave}")
