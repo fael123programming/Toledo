@@ -1,4 +1,9 @@
+from dotenv import load_dotenv
 import streamlit as st
+import os
+
+
+load_dotenv()
 
 
 auth_ok = bool(
@@ -6,14 +11,36 @@ auth_ok = bool(
 )
 
 
+def load_ultramsg_env():
+    ultramsg_vars = []
+    i = 0
+    while True:
+        if f"ULTRAMSG_INSTANCE_ID_{i+1}" in os.environ:
+            ultramsg_vars.append({
+                "instance_id": os.environ[f"ULTRAMSG_INSTANCE_ID_{i+1}"],
+                "instance_token": os.environ[f"ULTRAMSG_INSTANCE_TOKEN_{i+1}"],
+                "phone_number": os.environ[f"ULTRAMSG_INSTANCE_PHONE_NUMBER_{i+1}"]
+            })
+            i += 1
+        else:
+            break
+    if ultramsg_vars:
+        st.session_state["ultramsg_vars"] = ultramsg_vars
+    else:
+        st.session_state["ultramsg_vars"] = None
+        st.warning("⚠️ Nenhuma variável de ambiente ULTRAMSG encontrada.")
+
+
 def main():
+    load_ultramsg_env()
     st.markdown("# 🟩 WhatsApp")
     st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
-    if not auth_ok:
+    if not st.session_state["ultramsg_vars"]:
         st.warning(
-            "⚠️ Defina SUPABASE_URL e SUPABASE_KEY em variáveis de ambiente ou em st.secrets para habilitar o armazenamento."
+            "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
         )
         return
+    st.write(st.session_state["ultramsg_vars"])
 
 
 main()
