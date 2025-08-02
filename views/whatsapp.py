@@ -14,7 +14,7 @@ auth_ok = bool(
 def load_ultramsg_env():
     ultramsg_vars = []
     i = 0
-    while True:
+    for key, value in st.secrets["ultramsg"].items():
         if f"ULTRAMSG_INSTANCE_ID_{i+1}" in os.environ:
             ultramsg_vars.append({
                 "instance_id": os.environ[f"ULTRAMSG_INSTANCE_ID_{i+1}"],
