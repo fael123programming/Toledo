@@ -25,17 +25,17 @@ def main():
     owner_col, phone_number_col = st.columns(2, vertical_alignment="bottom")
     with owner_col:
         owner_col_select = st.selectbox(
-            "📞 Selecione o número de telefone",
+            "📞 Selecione o remetente",
             options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
             key="phone_number_select",
-            help="Selecione o número de telefone para enviar mensagens."
+            help="Selecione o remetente para enviar as mensagens."
         )
     with phone_number_col:
         phone_number = st.text_input(
             "📱 Número de telefone",
             value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
             key="phone_number_input",
-            help="Número de telefone para enviar mensagens.",
+            help="Este é o número de telefone que enviará as mensagens.",
             disabled=True
         )
 
