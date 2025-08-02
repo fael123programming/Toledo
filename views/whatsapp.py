@@ -23,7 +23,7 @@ def load_ultramsg_env():
 
 
 def main():
-    load_ultramsg_env()
+    # load_ultramsg_env()
     st.markdown("# 🟩 WhatsApp")
     st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
     # st.write(st.session_state["ultramsg_vars"])
