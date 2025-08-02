@@ -1,6 +1,6 @@
+from utils import assertiva, algorithms
 from supabase import create_client
 from dotenv import load_dotenv
-from utils import assertiva
 from typing import Optional
 import streamlit as st
 from io import BytesIO
@@ -165,10 +165,12 @@ def show_worksheet(df, name: str):
     cols = df.columns.tolist()
     may_access, msg = assertiva.check_assertiva_access()
     col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
+    detected_col = algorithms.detect_name_column(df)
     with col_name_col:
         col_name = st.selectbox(
             'Nome da coluna',
             options=cols,
+            index=cols.index(detected_col) if detected_col in cols else 0,
             key=f"col_name_{name}_{st.session_state.dialog_postfix}",
             help="Selecione a coluna que contém os nomes completos" if may_access else msg,
             disabled=not may_access
