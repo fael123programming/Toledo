@@ -19,7 +19,8 @@ def load_ultramsg_env():
 def pre_visu_worksheet(worksheet_name: str):
     if st.button(
         label="📊 Visualizar planilha",
-        key="pre_visu_worksheet"
+        key="pre_visu_worksheet",
+        use_container_width=True
     ):
         st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
         df = worksheets.worksheet_to_df(worksheet_name)
@@ -64,7 +65,8 @@ def main():
                 "📈 Selecione a planilha",
                 options=st.session_state.files,
                 key="worksheet_whatsapp_select",
-                help="Selecione a planilha para enviar as mensagens."
+                help="Selecione a planilha para enviar as mensagens.",
+                use_container_width=True
             )
         with pre_visu_worksheet_col:
             pre_visu_worksheet(worksheet_select)
