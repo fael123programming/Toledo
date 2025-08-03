@@ -30,7 +30,7 @@ def pre_visu_worksheet(worksheet_name: str):
 @st.dialog(title="📊 Visualização da Planilha")
 def show_worksheet(df, name: str):
     st.subheader(f"Planilha: {name}")
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, use_container_width=True, hide_index=True, key=f'worksheet_df_{st.session_state.dialog_postfix}')
 
 
 def main():
