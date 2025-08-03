@@ -72,39 +72,40 @@ def send_msg_fragment():
             st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
             st.rerun(scope='fragment')
     if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
-        st.subheader(f"📊 Planilha {st.session_state['worksheet_name']}")
-        st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=False, key=f"loaded_worksheet_df_{st.session_state['worksheet_name']}")
-        st.subheader("📝 Modelo de mensagem")
-        message_template = st.text_area(
-            "Mensagem",
-            placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
-            key="message_template",
-            help="Use {nome} para referenciar uma coluna da planilha.",
-            max_chars=5000
-        )
-        st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
-        from_col, to_col = st.columns(2, vertical_alignment="center")
-        with from_col:
-            from_col_select = st.number_input(
-                "📍 Enviar de (linha)",
-                min_value=1,
-                max_value=len(st.session_state['worksheet']),
-                value=1,
-                step=1
+        with st.form("send_messages_form", border=False):
+            st.subheader(f"📊 Planilha {st.session_state['worksheet_name']}")
+            st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=False, key=f"loaded_worksheet_df_{st.session_state['worksheet_name']}")
+            st.subheader("📝 Modelo de mensagem")
+            message_template = st.text_area(
+                "Mensagem",
+                placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
+                key="message_template",
+                help="Use {nome} para referenciar uma coluna da planilha.",
+                max_chars=5000
             )
-        with to_col:
-            to_col_select = st.number_input(
-                "📍 Enviar até (linha)",
-                min_value=from_col_select,
-                max_value=len(st.session_state['worksheet']),
-                value=len(st.session_state['worksheet']),
-                step=1
-            )
-        if st.button(
-            "Enviar mensagens",
-            key="send_messages_button"
-        ):
-            pass
+            st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
+            from_col, to_col = st.columns(2, vertical_alignment="center")
+            with from_col:
+                from_col_select = st.number_input(
+                    "📍 Enviar de (linha)",
+                    min_value=1,
+                    max_value=len(st.session_state['worksheet']),
+                    value=1,
+                    step=1
+                )
+            with to_col:
+                to_col_select = st.number_input(
+                    "📍 Enviar até (linha)",
+                    min_value=from_col_select,
+                    max_value=len(st.session_state['worksheet']),
+                    value=len(st.session_state['worksheet']),
+                    step=1
+                )
+            if st.form_submit_button(
+                "Enviar mensagens",
+                key="send_messages_button"
+            ):
+                pass
 
 
 def main():
