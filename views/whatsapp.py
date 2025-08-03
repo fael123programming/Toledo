@@ -76,7 +76,7 @@ def send_msg_fragment():
         st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['worksheet_name']}")
         message_template = st.text_area(
             "📝 Modelo de mensagem",
-            value="Use {nome} para referenciar a coluna de nomes na planilha. Ex.: Olá, {nome}! Esta é uma mensagem de teste.",
+            value="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
             key="message_template",
             help="Use {nome} para referenciar a coluna de nomes na planilha."
         )
