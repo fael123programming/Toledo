@@ -83,6 +83,23 @@ def send_msg_fragment():
             max_chars=5000
         )
         st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
+        from_col, to_col = st.columns(2, vertical_alignment="center")
+        with from_col:
+            from_col_select = st.number_input(
+                "📍 Enviar de (linha)",
+                min_value=1,
+                max_value=len(st.session_state['worksheet']),
+                value=1,
+                step=1
+            )
+        with to_col:
+            to_col_select = st.number_input(
+                "📍 Enviar até (linha)",
+                min_value=from_col_select,
+                max_value=len(st.session_state['worksheet']),
+                value=len(st.session_state['worksheet']),
+                step=1
+            )
         if st.button(
             "Enviar mensagens",
             key="send_messages_button"
