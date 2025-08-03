@@ -69,8 +69,7 @@ def main():
                 use_container_width=True
             )
         with pre_visu_worksheet_col:
-            pre_visu_worksheet(worksheet_select)
-        st.write(worksheet_select)
+            st.write(worksheet_select)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
