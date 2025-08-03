@@ -59,17 +59,16 @@ def main():
         )
     st.session_state.files = worksheets.list_cloud_files()
     if st.session_state.files:
-        worksheet_whatsapp_col, pre_visu_worksheet_col = st.columns(2, vertical_alignment="bottom")
-        with worksheet_whatsapp_col:
-            worksheet_select = st.selectbox(
-                "📈 Selecione a planilha",
-                options=st.session_state.files,
-                key="worksheet_whatsapp_select",
-                help="Selecione a planilha para enviar as mensagens.",
-                accept_new_options=True
-            )
-        with pre_visu_worksheet_col:
-            pre_visu_worksheet(worksheet_select)
+        worksheet_select = st.selectbox(
+            "📈 Selecione a planilha",
+            options=st.session_state.files,
+            key="worksheet_whatsapp_select",
+            help="Selecione a planilha para enviar as mensagens."
+        )
+        if worksheet_select:
+            df = worksheets.worksheet_to_df(worksheet_select)
+            st.dataframe(df, use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
+            
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
