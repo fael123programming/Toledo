@@ -36,6 +36,10 @@ def show_worksheet(df, name: str):
 
 @st.fragment
 def send_msg_fragment():
+    st.session_state.files = worksheets.list_cloud_files()
+    if not st.session_state.files:
+        st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
+        return
     with st.container(border=True):
         owner_col, phone_number_col = st.columns(2, vertical_alignment="center")
         with owner_col:
@@ -53,8 +57,6 @@ def send_msg_fragment():
                 help="Este é o número de telefone que enviará as mensagens.",
                 disabled=True
             )
-        st.session_state.files = worksheets.list_cloud_files()
-        if st.session_state.files:
             worksheet_select = st.selectbox(
                 "📈 Selecione a planilha",
                 options=st.session_state.files,
@@ -68,11 +70,41 @@ def send_msg_fragment():
             ):
                 st.session_state['worksheet_name'] = worksheet_select
                 st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
-            if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
-                st.subheader(f"Planilha {worksheet_select}")
-                st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
-        else:
-            st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
+    owner_col, phone_number_col = st.columns(2, vertical_alignment="center")
+    with owner_col:
+        owner_col_select = st.selectbox(
+            "📞 Selecione o remetente",
+            options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
+            key="phone_number_select",
+            help="Selecione o remetente para enviar as mensagens."
+        )
+    with phone_number_col:
+        phone_number = st.text_input(
+            "📱 Número de telefone",
+            value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
+            key="phone_number_input",
+            help="Este é o número de telefone que enviará as mensagens.",
+            disabled=True
+        )
+    st.session_state.files = worksheets.list_cloud_files()
+    if st.session_state.files:
+        worksheet_select = st.selectbox(
+            "📈 Selecione a planilha",
+            options=st.session_state.files,
+            key="worksheet_whatsapp_select",
+            help="Selecione a planilha para enviar as mensagens."
+        )
+        if st.button(
+            'Carregar planilha',
+            key='load_worksheet_button',
+            help="Carregar a planilha selecionada para visualização."
+        ):
+            st.session_state['worksheet_name'] = worksheet_select
+            st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
+            st.rerun(scope='fragment')
+    if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
+            st.subheader(f"Planilha {st.session_state['worksheet_name']}")
+            st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
 
 
 def main():
