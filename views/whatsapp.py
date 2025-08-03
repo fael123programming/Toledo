@@ -74,15 +74,13 @@ def send_msg_fragment():
     if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
         st.subheader(f"Planilha {st.session_state['worksheet_name']}")
         st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['worksheet_name']}")
-        st.markdown("Estas são as colunas disponíveis na planilha:")
-        st.write(st.session_state['worksheet'].columns.tolist())
-        st.subheader("Preparar mensagem")
         message_template = st.text_area(
             "📝 Modelo de mensagem",
             value="Olá, {nome}! Esta é uma mensagem de teste.",
             key="message_template",
             help="Use {nome} para referenciar a coluna de nomes na planilha."
         )
+        st.info(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
 
 
 def main():
