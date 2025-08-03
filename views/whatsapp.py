@@ -69,7 +69,6 @@ def main():
         if st.button(
             'Carregar planilha',
             key='load_worksheet_button',
-            use_container_width=True,
             help="Carregar a planilha selecionada para visualização."
         ):
             st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
