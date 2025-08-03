@@ -77,9 +77,10 @@ def send_msg_fragment():
         st.subheader("📝 Modelo de mensagem")
         message_template = st.text_area(
             "Mensagem",
-            value="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
+            placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
             key="message_template",
-            help="Use {nome} para referenciar a coluna de nomes na planilha."
+            help="Use {nome} para referenciar uma coluna da planilha.",
+            max_chars=5000
         )
         st.info(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
         if st.button(
