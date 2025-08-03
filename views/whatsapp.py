@@ -1,3 +1,4 @@
+import uuid
 from utils import worksheets
 import streamlit as st
 
@@ -12,6 +13,23 @@ def load_ultramsg_env():
             "PHONE_NUMBER": creds["PHONE_NUMBER"]
         }
     st.session_state["ultramsg_vars"] = ultramsg_vars
+
+
+@st.fragment
+def pre_visu_worksheet(worksheet_name: str):
+    if st.button(
+        label="📊 Visualizar planilha",
+        key="pre_visu_worksheet"
+    ):
+        st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
+        df = worksheets.worksheet_to_df(worksheet_name)
+        show_worksheet(df, worksheet_name)
+
+
+@st.dialog(title="📊 Visualização da Planilha")
+def show_worksheet(df, name: str):
+    st.subheader(f"Planilha: {name}")
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 def main():
@@ -42,15 +60,16 @@ def main():
     if st.session_state.files:
         worksheet_whatsapp_col, pre_visu_worksheet_col = st.columns(2, vertical_alignment="bottom")
         with worksheet_whatsapp_col:
-            owner_col_select = st.selectbox(
+            worksheet_select = st.selectbox(
                 "📈 Selecione a planilha",
                 options=st.session_state.files,
                 key="worksheet_whatsapp_select",
                 help="Selecione a planilha para enviar as mensagens."
             )
         with pre_visu_worksheet_col:
-            pass
+            pre_visu_worksheet(worksheet_select)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
+
 
 main()
