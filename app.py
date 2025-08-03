@@ -45,7 +45,7 @@ VIEWS = [
     {
         'page': "views/whatsapp.py",
         'title': 'WhatsApp',
-        'icon': '💬',
+        'icon': '🟩',
         "url_path": "/whatsapp"
     }
 ]

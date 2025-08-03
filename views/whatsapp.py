@@ -1,6 +1,7 @@
-import uuid
 from utils import worksheets
 import streamlit as st
+import pandas as pd
+import uuid
 
 
 def load_ultramsg_env():
@@ -65,10 +66,15 @@ def main():
             key="worksheet_whatsapp_select",
             help="Selecione a planilha para enviar as mensagens."
         )
-        if worksheet_select:
-            df = worksheets.worksheet_to_df(worksheet_select)
-            st.dataframe(df, use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
-            
+        if st.button(
+            'Carregar planilha',
+            key='load_worksheet_button',
+            use_container_width=True,
+            help="Carregar a planilha selecionada para visualização."
+        ):
+            st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
+        if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
+            st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
