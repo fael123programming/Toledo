@@ -65,10 +65,11 @@ def main():
                 "📈 Selecione a planilha",
                 options=st.session_state.files,
                 key="worksheet_whatsapp_select",
-                help="Selecione a planilha para enviar as mensagens."
+                help="Selecione a planilha para enviar as mensagens.",
+                accept_new_options=True
             )
         with pre_visu_worksheet_col:
-            pass
+            pre_visu_worksheet(worksheet_select)
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
 
