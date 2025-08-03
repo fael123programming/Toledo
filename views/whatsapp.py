@@ -63,7 +63,7 @@ def main():
         with worksheet_whatsapp_col:
             worksheet_select = st.selectbox(
                 "📈 Selecione a planilha",
-                options=st.session_state.files,
+                options=['a', 'b'],
                 key="worksheet_whatsapp_select",
                 help="Selecione a planilha para enviar as mensagens.",
                 use_container_width=True
