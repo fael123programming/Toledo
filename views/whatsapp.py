@@ -68,6 +68,7 @@ def main():
                 help="Selecione a planilha para enviar as mensagens.",
                 use_container_width=True
             )
+        st.write(worksheet_select)
         with pre_visu_worksheet_col:
             pre_visu_worksheet(worksheet_select)
     else:
