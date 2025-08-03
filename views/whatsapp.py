@@ -88,7 +88,7 @@ def send_msg_fragment():
             with from_col:
                 from_col_select = st.number_input(
                     "📍 Enviar de (linha)",
-                    min_value=1,
+                    min_value=0,
                     max_value=len(st.session_state['worksheet']),
                     value=1,
                     step=1
