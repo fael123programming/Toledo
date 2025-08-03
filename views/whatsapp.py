@@ -82,7 +82,7 @@ def send_msg_fragment():
             help="Use {nome} para referenciar uma coluna da planilha.",
             max_chars=5000
         )
-        st.info(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
+        st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['worksheet'].columns)}")
         if st.button(
             "Enviar mensagens",
             key="send_messages_button"
