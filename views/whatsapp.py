@@ -72,7 +72,7 @@ def send_msg_fragment():
             st.session_state['worksheet'] = worksheets.worksheet_to_df(worksheet_select)
             st.rerun(scope='fragment')
     if "worksheet" in st.session_state and type(st.session_state['worksheet']) is pd.DataFrame:
-        st.subheader(f"Planilha {st.session_state['worksheet_name']}")
+        st.subheader(f"📊 Planilha {st.session_state['worksheet_name']}")
         st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['worksheet_name']}")
         st.subheader("📝 Modelo de mensagem")
         message_template = st.text_area(
