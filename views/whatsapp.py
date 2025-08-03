@@ -34,14 +34,8 @@ def show_worksheet(df, name: str):
     st.dataframe(df, use_container_width=True, hide_index=True, key=f'worksheet_df_{st.session_state.dialog_postfix}')
 
 
-def main():
-    load_ultramsg_env()
-    st.markdown("# 🟩 WhatsApp")
-    st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
-    if not st.session_state["ultramsg_vars"]:
-        st.warning(
-            "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
-        )
+@st.fragment
+def send_msg_fragment():
     owner_col, phone_number_col = st.columns(2, vertical_alignment="center")
     with owner_col:
         owner_col_select = st.selectbox(
@@ -76,6 +70,18 @@ def main():
             st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f'worksheet_df_{worksheet_select}')
     else:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
+
+
+def main():
+    load_ultramsg_env()
+    st.markdown("# 🟩 WhatsApp")
+    st.subheader("📤 Envie as suas mensagens para os contatos das planilhas automaticamente.")
+    if not st.session_state["ultramsg_vars"]:
+        st.warning(
+            "⚠️ Defina as variáveis para comunicação com a API do WhatsApp para habilitar o envio automático de mensagens."
+        )
+        return
+    send_msg_fragment()
 
 
 main()
