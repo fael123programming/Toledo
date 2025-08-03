@@ -57,12 +57,12 @@ def send_msg_fragment():
                 help="Este é o número de telefone que enviará as mensagens.",
                 disabled=True
             )
-            worksheet_select = st.selectbox(
-                "📈 Selecione a planilha",
-                options=st.session_state.files,
-                key="worksheet_whatsapp_select",
-                help="Selecione a planilha para enviar as mensagens."
-            )
+        worksheet_select = st.selectbox(
+            "📈 Selecione a planilha",
+            options=st.session_state.files,
+            key="worksheet_whatsapp_select",
+            help="Selecione a planilha para enviar as mensagens."
+        )
         if st.button(
             'Carregar planilha',
             key='load_worksheet_button',
