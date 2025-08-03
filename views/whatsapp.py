@@ -103,7 +103,8 @@ def send_msg_fragment():
                 )
             if st.form_submit_button(
                 "Enviar mensagens",
-                key="send_messages_button"
+                help="Enviar mensagens para os contatos da planilha selecionada.",
+                type="primary"
             ):
                 pass
 
