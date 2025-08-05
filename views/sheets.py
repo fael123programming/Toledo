@@ -1,6 +1,7 @@
 from utils import assertiva, algorithms
 from supabase import create_client
 from dotenv import load_dotenv
+from datetime import datetime
 from utils import worksheets
 import streamlit as st
 from io import BytesIO
@@ -87,6 +88,7 @@ def show_worksheet(df, name: str):
     may_access, msg = assertiva.check_assertiva_access()
     col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
     detected_col = algorithms.detect_name_column(df)[0]
+    st.write(may_access, msg, datetime.now())
     with col_name_col:
         col_name = st.selectbox(
             'Nome da coluna',
