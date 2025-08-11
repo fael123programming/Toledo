@@ -179,6 +179,15 @@ def show_upload_dialog():
 
 @st.fragment
 def render_whatsapp_fragment():
+    if st.button(
+        "↩️ Voltar",
+        key=f"back_btn_worksheet_{st.session_state['df_name']}",
+        help='Voltar para gerenciamento de planilhas'
+    ):
+        st.session_state.show_wpp_view = False
+        st.session_state.df_wpp = None
+        st.session_state.df_name = None
+        st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
         with st.form("send_messages_form", border=False):
             st.subheader(f"📊 Planilha {st.session_state['df_name']}")
