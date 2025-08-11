@@ -226,7 +226,7 @@ def main():
         )
         return
     st.session_state.files = worksheets.list_cloud_files()
-    if "show_wpp_view" in st.session and st.session_state.show_wpp_view:
+    if "show_wpp_view" in st.session_state and st.session_state.show_wpp_view:
         render_whatsapp_fragment()
     elif st.session_state.files:
         _, upload_col = st.columns([10, 3], vertical_alignment="center")
