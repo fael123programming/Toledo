@@ -1,3 +1,4 @@
+import pandas as pd
 from utils import assertiva, algorithms
 from supabase import create_client
 from dotenv import load_dotenv
@@ -69,13 +70,27 @@ def show_delete_confirmation(name: str):
 @st.fragment
 def visu_button(name: str):
     if st.button(
-        label="⬆️",
+        label="↗️",
         key=f"visu_{name}",
         help="Visualizar planilha"
     ):
         st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
         df = worksheets.worksheet_to_df(name)
         show_worksheet(df, name)
+
+
+@st.fragment
+def wpp_button(name: str):
+    if st.button(
+        label="🟩",
+        key=f"wpp_{name}",
+        help="Disparar para o WhatsApp"
+    ):
+        df = worksheets.worksheet_to_df(name)
+        st.session_state.show_wpp_view = True
+        st.session_state.df_wpp = df
+        st.session_state.df_name = name
+        st.rerun(scope='app')
 
 
 @st.dialog(title="Visualizar Planilha", width="large")
@@ -162,6 +177,46 @@ def show_upload_dialog():
             st.rerun(scope='app')
 
 
+@st.fragment
+def render_whatsapp_fragment():
+    if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
+        with st.form("send_messages_form", border=False):
+            st.subheader(f"📊 Planilha {st.session_state['df_name']}")
+            st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=False, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
+            st.subheader("📝 Modelo de mensagem")
+            message_template = st.text_area(
+                "Mensagem",
+                placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
+                key="message_template",
+                help="Use {nome} para referenciar uma coluna da planilha.",
+                max_chars=5000
+            )
+            st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['df_wpp'].columns)}")
+            from_col, to_col = st.columns(2, vertical_alignment="center")
+            with from_col:
+                from_col_select = st.number_input(
+                    "📍 Enviar de (linha)",
+                    min_value=0,
+                    max_value=len(st.session_state['df_wpp']),
+                    value=1,
+                    step=1
+                )
+            with to_col:
+                to_col_select = st.number_input(
+                    "📍 Enviar até (linha)",
+                    min_value=from_col_select,
+                    max_value=len(st.session_state['df_wpp']),
+                    value=len(st.session_state['df_wpp']),
+                    step=1
+                )
+            if st.form_submit_button(
+                "Enviar mensagens",
+                help="Enviar mensagens para os contatos da planilha selecionada.",
+                type="primary"
+            ):
+                pass
+
+
 def main():
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
@@ -171,7 +226,9 @@ def main():
         )
         return
     st.session_state.files = worksheets.list_cloud_files()
-    if st.session_state.files:
+    if "show_wpp_view" in st.session and st.session_state.show_wpp_view:
+        render_whatsapp_fragment()
+    elif st.session_state.files:
         _, upload_col = st.columns([10, 3], vertical_alignment="center")
         with upload_col:
             upload_button()
@@ -199,9 +256,11 @@ def main():
                 with file_name_col:
                     st.markdown(file)
                 with action_col:
-                    visu_col, download_col, del_col = st.columns(3, vertical_alignment="center")
+                    visu_col, whatsapp_col, download_col, del_col = st.columns(4, vertical_alignment="center")
                     with visu_col:
                         visu_button(file)
+                    with whatsapp_col:
+                        wpp_button(file)
                     with download_col:
                         download_button(file)
                     with del_col:
