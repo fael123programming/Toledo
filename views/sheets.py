@@ -201,45 +201,45 @@ def render_whatsapp_fragment():
                 max_chars=5000
             )
             st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['df_wpp'].columns)}")
-            from_col, to_col = st.columns(2, vertical_alignment="center")
-            with from_col:
-                from_col_select = st.number_input(
-                    "📍 Enviar de (linha)",
-                    min_value=0,
-                    max_value=len(st.session_state['df_wpp']),
-                    value=1,
-                    step=1,
-                    key="from_col_select_key"
-                )
-            with to_col:
-                to_col_select = st.number_input(
-                    "📍 Enviar até (linha)",
-                    min_value=from_col_select,
-                    max_value=len(st.session_state['df_wpp']),
-                    value=len(st.session_state['df_wpp']),
-                    step=1,
-                    key="to_col_select_key"
-                )
-            start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
-            with start_secs_col:
-                start_secs_select = st.number_input(
-                    "⏳ Aguardar de (segundos)",
-                    min_value=0,
-                    max_value=60,
-                    value=1,
-                    step=1,
-                    key="start_secs_select_key"
-                )
-            with end_secs_col:
-                end_secs_select = st.number_input(
-                    "⏳ Aguardar até (segundos)",
-                    min_value=start_secs_select,
-                    max_value=60,
-                    value=30,
-                    step=1,
-                    key="end_secs_select_key"
-                )
-            
+            with st.container(key='special_params', border=True):
+                from_col, to_col = st.columns(2, vertical_alignment="center")
+                with from_col:
+                    from_col_select = st.number_input(
+                        "📍 Enviar de (linha)",
+                        min_value=0,
+                        max_value=len(st.session_state['df_wpp']),
+                        value=1,
+                        step=1,
+                        key="from_col_select_key"
+                    )
+                with to_col:
+                    to_col_select = st.number_input(
+                        "📍 Enviar até (linha)",
+                        min_value=from_col_select,
+                        max_value=len(st.session_state['df_wpp']),
+                        value=len(st.session_state['df_wpp']),
+                        step=1,
+                        key="to_col_select_key"
+                    )
+                start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
+                with start_secs_col:
+                    start_secs_select = st.number_input(
+                        "⏳ Aguardar de (segundos)",
+                        min_value=0,
+                        max_value=60,
+                        value=1,
+                        step=1,
+                        key="start_secs_select_key"
+                    )
+                with end_secs_col:
+                    end_secs_select = st.number_input(
+                        "⏳ Aguardar até (segundos)",
+                        min_value=start_secs_select,
+                        max_value=60,
+                        value=30,
+                        step=1,
+                        key="end_secs_select_key"
+                    )
             if st.form_submit_button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
