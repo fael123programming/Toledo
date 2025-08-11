@@ -25,12 +25,12 @@ except locale.Error:
 
 
 VIEWS = [
-    {
-        'page': "views/home.py",
-        'title': 'Home',
-        'icon': '🏠',
-        "url_path": "/home"
-    },
+    # {
+    #     'page': "views/home.py",
+    #     'title': 'Home',
+    #     'icon': '🏠',
+    #     "url_path": "/home"
+    # },
     {
         'page': "views/sheets.py",
         'title': 'Planilhas',
