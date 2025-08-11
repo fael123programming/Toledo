@@ -196,7 +196,7 @@ def render_whatsapp_fragment():
             message_template = st.text_area(
                 "Mensagem",
                 placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
-                key="message_template",
+                key="message_template_key",
                 help="Use {nome} para referenciar uma coluna da planilha.",
                 max_chars=5000
             )
@@ -208,7 +208,8 @@ def render_whatsapp_fragment():
                     min_value=0,
                     max_value=len(st.session_state['df_wpp']),
                     value=1,
-                    step=1
+                    step=1,
+                    key="from_col_select_key"
                 )
             with to_col:
                 to_col_select = st.number_input(
@@ -216,8 +217,29 @@ def render_whatsapp_fragment():
                     min_value=from_col_select,
                     max_value=len(st.session_state['df_wpp']),
                     value=len(st.session_state['df_wpp']),
-                    step=1
+                    step=1,
+                    key="to_col_select_key"
                 )
+            start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
+            with start_secs_col:
+                start_secs_select = st.number_input(
+                    "⏳ Aguardar de (segundos)",
+                    min_value=0,
+                    max_value=60,
+                    value=1,
+                    step=1,
+                    key="start_secs_select_key"
+                )
+            with end_secs_col:
+                end_secs_select = st.number_input(
+                    "⏳ Aguardar até (segundos)",
+                    min_value=start_secs_select,
+                    max_value=60,
+                    value=30,
+                    step=1,
+                    key="end_secs_select_key"
+                )
+            
             if st.form_submit_button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
