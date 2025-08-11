@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from gotrue.errors import AuthApiError
 import streamlit as st
 import locale
+import base64
 import json
 import time
 
@@ -110,11 +111,20 @@ def main():
                 logout()
                 st.rerun()
     else:
-        _, center_col, _ = st.columns([2, 2, 2], vertical_alignment='center')
+        _, center_col, _ = st.columns(3, vertical_alignment='center')
         with center_col:
             _, center_2_col, _ = st.columns([1, 3, 1], vertical_alignment='center')
             with center_2_col:
-                st.image("assets/toledo.png", width=200)
+                image_path = "assets/toledo.png"
+                with open(image_path, "rb") as f:
+                    image_bytes = f.read()
+                encoded_image = base64.b64encode(image_bytes).decode()
+                custom_html = f"""
+                <div style="display: flex; justify-content: center; align-items: center; height: 100%;">
+                    <img src="data:image/png;base64,{encoded_image}" style="max-width: 80%; height: auto;">
+                </div>
+                """
+                st.markdown(custom_html, unsafe_allow_html=True)
             with st.form("login_form"):
                 email = st.text_input("E-mail", key='login_email')
                 pwd = st.text_input("Senha", key='password_key', type="password")
