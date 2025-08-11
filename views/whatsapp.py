@@ -40,32 +40,15 @@ def send_msg_fragment():
     if not st.session_state.files:
         st.warning("Nenhuma planilha armazenada. Faça upload na opção \"Planilhas\" no menu lateral para começar.")
         return
-    with st.container(border=True):
-        owner_col, phone_number_col = st.columns(2, vertical_alignment="center")
-        with owner_col:
-            owner_col_select = st.selectbox(
-                "📞 Selecione o remetente",
-                options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
-                key="phone_number_select",
-                help="Selecione o remetente para enviar as mensagens."
-            )
-        with phone_number_col:
-            phone_number = st.text_input(
-                "📱 Número de telefone",
-                value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
-                key="phone_number_input",
-                help="Este é o número de telefone que enviará as mensagens.",
-                disabled=True
-            )
+    with st.form(key="load_sheet_form", clear_on_submit=True):
         worksheet_select = st.selectbox(
             "📈 Selecione a planilha",
             options=st.session_state.files,
             key="worksheet_whatsapp_select",
             help="Selecione a planilha para enviar as mensagens."
         )
-        if st.button(
+        if st.form_submit_button(
             'Carregar planilha',
-            key='load_worksheet_button',
             help="Carregar a planilha selecionada para visualização."
         ):
             st.session_state['worksheet_name'] = worksheet_select
