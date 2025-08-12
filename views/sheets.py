@@ -159,7 +159,7 @@ def render_whatsapp_fragment():
                 )
                 if st.button(
                     "Salvar Alterações",
-                    key=f"save_button_{st.session_state['df_name']}_{st.session_state.dialog_postfix}",
+                    key=f"save_button_{st.session_state['df_name']}",
                     disabled=df_edited.equals(st.session_state['df_wpp'])
                 ):
                     try:
@@ -178,6 +178,7 @@ def render_whatsapp_fragment():
         with message_tab:
             with st.container(key='message_container_key', border=True):
                 st.subheader("📝 Modelo de mensagem")
+                st.info("Monte a sua mensagem usando chaves e os nomes das colunas. Quando estiver pronto, passe para a próxima aba ➡️.")
                 message_template = st.text_area(
                     "Mensagem",
                     placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
@@ -189,6 +190,7 @@ def render_whatsapp_fragment():
         with lines_tab:
             with st.container(key='special_params_container_key', border=True):
                 st.subheader("📍 Linhas para disparar")
+                st.info("Defina quais linhas da planilha devem ser disparadas. Quando estiver pronto, passe para a próxima aba ➡️.")
                 from_col, to_col = st.columns(2, vertical_alignment="center")
                 with from_col:
                     from_col_select = st.number_input(
@@ -208,8 +210,9 @@ def render_whatsapp_fragment():
                         step=1,
                         key="to_col_select_key"
                     )
-                    st.subheader("⏳ Tempo entre cada disparo")
         with time_tab:
+            st.subheader("⏳ Tempo entre cada disparo")
+            st.info("Configure quantos segundos haverá entre cada disparo. Quando estiver pronto, passe para a próxima aba ➡️.")
             start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
             with start_secs_col:
                 start_secs_select = st.number_input(
@@ -231,10 +234,15 @@ def render_whatsapp_fragment():
                 )
             st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
         with phone_tab:
+            st.subheader("📲 Telefones")
+            st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
+
+        with start_tab:
             if st.button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
-                type="primary"
+                type="primary",
+                key="send_msgs_btn_key"
             ):
                 pass
 
