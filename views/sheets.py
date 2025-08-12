@@ -236,7 +236,7 @@ def render_whatsapp_fragment():
                 st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
         with phone_tab:
             with st.container(key='phones_container_key', border=True):
-                st.subheader("📲 Telefones")
+                st.subheader("📱 Telefones")
                 st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
                 phone_owner_opts = list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys()))
                 owner_select = st.multiselect(
@@ -251,7 +251,7 @@ def render_whatsapp_fragment():
                 st.caption("Os disparos são feitos alternadamente entre um e outro telefone de forma sequencial.")
                 detected_col = algorithms.detect_brazil_phone_column(st.session_state['df_wpp'])[0]
                 col_name_dest = st.selectbox(
-                    'Defina a coluna da planilha com os números de telefone destinatários',
+                    '📲 Defina a coluna da planilha com os números de telefone destinatários',
                     options=cols,
                     index=cols.index(detected_col) if detected_col in cols else 0,
                     key="col_name_dest_key",
