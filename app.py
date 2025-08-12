@@ -37,12 +37,12 @@ VIEWS = [
         'icon': '📊',
         "url_path": "/sheets"
     },
-    {
-        'page': "views/whatsapp.py",
-        'title': 'WhatsApp',
-        'icon': '🟩',
-        "url_path": "/whatsapp"
-    },
+    # {
+    #     'page': "views/whatsapp.py",
+    #     'title': 'WhatsApp',
+    #     'icon': '🟩',
+    #     "url_path": "/whatsapp"
+    # },
     {
         'page': "views/docs.py",
         'title': 'Documentos',
