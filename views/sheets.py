@@ -248,6 +248,7 @@ def render_whatsapp_fragment():
                 )
                 for owner in owner_select:
                     st.info(st.session_state["ultramsg_vars"][owner.lower()]["PHONE_NUMBER"])
+                st.caption("Os disparos são feitos alternadamente entre um e outro telefone de forma sequencial.")
         with start_tab:
             if st.button(
                 "Enviar mensagens",
