@@ -235,9 +235,22 @@ def render_whatsapp_fragment():
                     )
                 st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
         with phone_tab:
-            st.subheader("📲 Telefones")
-            st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
-
+            with st.container(key='phones_container_key', border=True):
+                st.subheader("📲 Telefones")
+                st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
+                owner_col_select = st.selectbox(
+                    "📞 Selecione o remetente",
+                    options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
+                    key="phone_number_select",
+                    help="Selecione o remetente para enviar as mensagens."
+                )
+                phone_number = st.text_input(
+                    "📱 Número de telefone",
+                    value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
+                    key="phone_number_input",
+                    help="Este é o número de telefone que enviará as mensagens.",
+                    disabled=True
+                )
         with start_tab:
             if st.button(
                 "Enviar mensagens",
