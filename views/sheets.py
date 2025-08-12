@@ -211,28 +211,29 @@ def render_whatsapp_fragment():
                         key="to_col_select_key"
                     )
         with time_tab:
-            st.subheader("⏳ Tempo entre cada disparo")
-            st.info("Configure quantos segundos haverá entre cada disparo. Quando estiver pronto, passe para a próxima aba ➡️.")
-            start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
-            with start_secs_col:
-                start_secs_select = st.number_input(
-                    "Aguardar de (segundos)",
-                    min_value=0,
-                    max_value=60,
-                    value=1,
-                    step=1,
-                    key="start_secs_select_key"
-                )
-            with end_secs_col:
-                end_secs_select = st.number_input(
-                    "Aguardar até (segundos)",
-                    min_value=start_secs_select,
-                    max_value=60,
-                    value=30,
-                    step=1,
-                    key="end_secs_select_key"
-                )
-            st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
+            with st.container(key='special_params_container_key', border=True):
+                st.subheader("⏳ Tempo entre cada disparo")
+                st.info("Configure quantos segundos haverá entre cada disparo. Quando estiver pronto, passe para a próxima aba ➡️.")
+                start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
+                with start_secs_col:
+                    start_secs_select = st.number_input(
+                        "Aguardar de (segundos)",
+                        min_value=0,
+                        max_value=60,
+                        value=1,
+                        step=1,
+                        key="start_secs_select_key"
+                    )
+                with end_secs_col:
+                    end_secs_select = st.number_input(
+                        "Aguardar até (segundos)",
+                        min_value=start_secs_select,
+                        max_value=60,
+                        value=30,
+                        step=1,
+                        key="end_secs_select_key"
+                    )
+                st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
         with phone_tab:
             st.subheader("📲 Telefones")
             st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
