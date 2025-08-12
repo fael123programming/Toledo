@@ -211,7 +211,7 @@ def render_whatsapp_fragment():
                         key="to_col_select_key"
                     )
         with time_tab:
-            with st.container(key='special_params_container_key', border=True):
+            with st.container(key='time_container_key', border=True):
                 st.subheader("⏳ Tempo entre cada disparo")
                 st.info("Configure quantos segundos haverá entre cada disparo. Quando estiver pronto, passe para a próxima aba ➡️.")
                 start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
