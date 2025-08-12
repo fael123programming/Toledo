@@ -250,7 +250,7 @@ def render_whatsapp_fragment():
                 )
             st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
         with phone_tab:
-            if st.form_submit_button(
+            if st.button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
                 type="primary"
