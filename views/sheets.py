@@ -250,14 +250,13 @@ def render_whatsapp_fragment():
                     st.info(st.session_state["ultramsg_vars"][owner.lower()]["PHONE_NUMBER"])
                 st.caption("Os disparos são feitos alternadamente entre um e outro telefone de forma sequencial.")
                 detected_col = algorithms.detect_brazil_phone_column(st.session_state['df_wpp'])[0]
-                with col_name_col:
-                    col_name_dest = st.selectbox(
-                        'Defina a coluna da planilha com os números de telefone destinatários',
-                        options=cols,
-                        index=cols.index(detected_col) if detected_col in cols else 0,
-                        key="col_name_dest_key",
-                        help="Selecione a coluna que contenha os números de telefone para enviar as mensagens"
-                    )
+                col_name_dest = st.selectbox(
+                    'Defina a coluna da planilha com os números de telefone destinatários',
+                    options=cols,
+                    index=cols.index(detected_col) if detected_col in cols else 0,
+                    key="col_name_dest_key",
+                    help="Selecione a coluna que contenha os números de telefone para enviar as mensagens"
+                )
         with start_tab:
             if st.button(
                 "Enviar mensagens",
