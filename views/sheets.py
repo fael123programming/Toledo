@@ -129,10 +129,11 @@ def render_whatsapp_fragment():
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
                 st.info("Revise a sua planilha antes de disparar. Quando estiver pronto, passe para a próxima aba ➡️.")
                 cols = st.session_state['df_wpp'].columns.tolist()
-                may_access, msg = assertiva.check_assertiva_access()
+                # may_access, msg = assertiva.check_assertiva_access()
+                may_access, msg = False, 'Sem acesso a Assertiva'
                 col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
                 detected_col = algorithms.detect_name_column(st.session_state['df_wpp'])[0]
-                st.write(may_access, msg, datetime.now())
+                # st.write(may_access, msg, datetime.now())
                 with col_name_col:
                     col_name = st.selectbox(
                         'Nome da coluna',
