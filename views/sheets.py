@@ -68,18 +68,6 @@ def show_delete_confirmation(name: str):
 
 
 @st.fragment
-def visu_button(name: str):
-    if st.button(
-        label="↗️",
-        key=f"visu_{name}",
-        help="Visualizar planilha"
-    ):
-        st.session_state.dialog_postfix = str(uuid.uuid4().hex[:8])
-        df = worksheets.worksheet_to_df(name)
-        show_worksheet(df, name)
-
-
-@st.fragment
 def wpp_button(name: str):
     if st.button(
         label="🟩",
@@ -91,60 +79,6 @@ def wpp_button(name: str):
         st.session_state.df_wpp = df
         st.session_state.df_name = name
         st.rerun(scope='app')
-
-
-@st.dialog(title="Visualizar Planilha", width="large")
-def show_worksheet(df, name: str):
-    st.markdown(f"# Planilha {name}")
-    if df is None:
-        st.error("Erro ao ler a planilha.")
-        return
-    cols = df.columns.tolist()
-    may_access, msg = assertiva.check_assertiva_access()
-    col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
-    detected_col = algorithms.detect_name_column(df)[0]
-    st.write(may_access, msg, datetime.now())
-    with col_name_col:
-        col_name = st.selectbox(
-            'Nome da coluna',
-            options=cols,
-            index=cols.index(detected_col) if detected_col in cols else 0,
-            key=f"col_name_{name}_{st.session_state.dialog_postfix}",
-            help="Selecione a coluna que contém os nomes completos" if may_access else msg,
-            disabled=not may_access
-        )
-    with search_assertiva_col:
-        search_assertiva = st.button(
-            "🔍 Buscar Telefone",
-            key=f"search_assertiva_{name}_{st.session_state.dialog_postfix}",
-            help="Buscar telefone mais recente usando Assertiva" if may_access else msg,
-            disabled=not may_access
-        )
-    df_edited = st.data_editor(
-        df,
-        key=f"data_editor_{name}_{st.session_state.dialog_postfix}",
-        use_container_width=True,
-        hide_index=True,
-        num_rows="dynamic"
-    )
-    if st.button(
-        "Salvar Alterações",
-        key=f"save_button_{name}_{st.session_state.dialog_postfix}",
-        disabled=df_edited.equals(df)
-    ):
-        try:
-            buf = BytesIO()
-            if name.lower().endswith((".xlsx", ".xls")):
-                df_edited.to_excel(buf, index=False)
-            else:
-                df_edited.to_csv(buf, index=False)
-            buf.name = name
-            worksheets.delete_cloud_file(name)
-            if worksheets.upload_to_cloud(buf):
-                st.success(f"Alterações salvas em {name}!")
-                st.rerun(scope="app")
-        except Exception as e:
-            st.error(f"Erro ao salvar alterações: {e}")
 
 
 @st.fragment
@@ -193,7 +127,52 @@ def render_whatsapp_fragment():
         with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
-                st.dataframe(st.session_state['df_wpp'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
+                cols = st.session_state['df_wpp'].columns.tolist()
+                may_access, msg = assertiva.check_assertiva_access()
+                col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
+                detected_col = algorithms.detect_name_column(st.session_state['df_wpp'])[0]
+                st.write(may_access, msg, datetime.now())
+                with col_name_col:
+                    col_name = st.selectbox(
+                        'Nome da coluna',
+                        options=cols,
+                        index=cols.index(detected_col) if detected_col in cols else 0,
+                        key="col_name_assertiva_key",
+                        help="Selecione a coluna que contém os nomes completos" if may_access else msg,
+                        disabled=not may_access
+                    )
+                with search_assertiva_col:
+                    search_assertiva = st.button(
+                        "🔍 Buscar Telefone",
+                        key="search_assertiva_btn_key",
+                        help="Buscar telefone mais recente usando Assertiva" if may_access else msg,
+                        disabled=not may_access
+                    )
+                df_edited = st.data_editor(
+                    st.session_state['df_wpp'],
+                    key=f"data_editor_{st.session_state['df_name']}",
+                    use_container_width=True,
+                    hide_index=True,
+                    num_rows="dynamic"
+                )
+                if st.button(
+                    "Salvar Alterações",
+                    key=f"save_button_{st.session_state['df_name']}_{st.session_state.dialog_postfix}",
+                    disabled=df_edited.equals(st.session_state['df_wpp'])
+                ):
+                    try:
+                        buf = BytesIO()
+                        if st.session_state['df_name'].lower().endswith((".xlsx", ".xls")):
+                            df_edited.to_excel(buf, index=False)
+                        else:
+                            df_edited.to_csv(buf, index=False)
+                        buf.name = st.session_state['df_name']
+                        worksheets.delete_cloud_file(st.session_state['df_name'])
+                        if worksheets.upload_to_cloud(buf):
+                            st.success(f"Alterações salvas em {st.session_state['df_name']}!")
+                            st.rerun(scope="app")
+                    except Exception as e:
+                        st.error(f"Erro ao salvar alterações: {e}")
                 st.info("Revise a sua planilha antes de disparar. Quando estiver pronto, passe para a próxima aba ➡️.")
         with message_tab:
             with st.container(key='message_container_key', border=True):
@@ -298,9 +277,7 @@ def main():
                 with file_name_col:
                     st.markdown(file)
                 with action_col:
-                    visu_col, whatsapp_col, download_col, del_col = st.columns(4, vertical_alignment="center")
-                    with visu_col:
-                        visu_button(file)
+                    whatsapp_col, download_col, del_col = st.columns(3, vertical_alignment="center")
                     with whatsapp_col:
                         wpp_button(file)
                     with download_col:
