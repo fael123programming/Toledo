@@ -238,19 +238,16 @@ def render_whatsapp_fragment():
             with st.container(key='phones_container_key', border=True):
                 st.subheader("📲 Telefones")
                 st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
-                owner_col_select = st.selectbox(
-                    "📞 Selecione o remetente",
-                    options=list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys())),
+                phone_owner_opts = list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys()))
+                owner_select = st.multiselect(
+                    "📞 Selecione o(s) remetente(s)",
+                    options=phone_owner_opts,
+                    default=phone_owner_opts,
                     key="phone_number_select",
-                    help="Selecione o remetente para enviar as mensagens."
+                    help="Selecione o(s) remetente(s) para enviar as mensagens."
                 )
-                phone_number = st.text_input(
-                    "📱 Número de telefone",
-                    value=st.session_state["ultramsg_vars"][owner_col_select.lower()]["PHONE_NUMBER"],
-                    key="phone_number_input",
-                    help="Este é o número de telefone que enviará as mensagens.",
-                    disabled=True
-                )
+                for owner in owner_select:
+                    st.info(st.session_state["ultramsg_vars"][owner.lower()]["PHONE_NUMBER"])
         with start_tab:
             if st.button(
                 "Enviar mensagens",
