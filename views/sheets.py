@@ -192,6 +192,7 @@ def render_whatsapp_fragment():
         worksheet_tab, message_tab, lines_tab, time_tab, phone_tab, start_tab = st.tabs(['Planilha', 'Mensagem', 'Linhas', 'Intervalo', 'Telefone', 'Iniciar'])
         with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
+                st.subheader("Revise a sua planilha antes de disparar ➡️")
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
                 st.dataframe(st.session_state['df_wpp'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
         with message_tab:
