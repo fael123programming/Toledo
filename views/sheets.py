@@ -190,18 +190,20 @@ def render_whatsapp_fragment():
         st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
         with st.form("send_messages_form", border=False):
-            st.subheader(f"📊 Planilha {st.session_state['df_name']}")
-            st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=False, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
-            st.subheader("📝 Modelo de mensagem")
-            message_template = st.text_area(
-                "Mensagem",
-                placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
-                key="message_template_key",
-                help="Use {nome} para referenciar uma coluna da planilha.",
-                max_chars=5000
-            )
-            st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['df_wpp'].columns)}")
-            with st.container(key='special_params', border=True):
+            with st.container(key='worksheet_container_key', border=True):
+                st.subheader(f"📊 Planilha {st.session_state['df_name']}")
+                st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
+            with st.container(key='message_container_key', border=True):
+                st.subheader("📝 Modelo de mensagem")
+                message_template = st.text_area(
+                    "Mensagem",
+                    placeholder="Use {nome da coluna} para referenciar cada coluna na planilha. O valor será substituído pelo conteúdo da célula correspondente.",
+                    key="message_template_key",
+                    help="Use {nome} para referenciar uma coluna da planilha.",
+                    max_chars=5000
+                )
+                st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['df_wpp'].columns)}")
+            with st.container(key='special_params_container_key', border=True):
                 st.subheader("📍 Linhas para disparar")
                 from_col, to_col = st.columns(2, vertical_alignment="center")
                 with from_col:
