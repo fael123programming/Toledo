@@ -95,3 +95,30 @@ def detect_name_column(df: pd.DataFrame) -> tuple[str, pd.Series]:
     scores = {col: score_series(df[col]) for col in obj_cols}
     best = max(scores, key=scores.get)
     return best, pd.Series(scores, name="score").sort_values(ascending=False)
+
+
+def _score_phone_series(s: pd.Series) -> float:
+    s = s.astype("string").str.strip()
+    nonempty = s.fillna("").str.len() > 0
+    n = int(nonempty.sum())
+    if n == 0:
+        return 0.0
+    STRICT_FMT = r'(?i)^(?=.*[\s().-])(?:\+?55[\s.-]?)?(?:\(?0?\d{2}\)?[\s.-]?)?(?:9\d{4}[\s.-]?\d{4}|[2-9]\d{3}[\s.-]?\d{4})$'
+    LOOSE_DIGITS = r'^(?:\+?55)?\d{10,11}$'
+    CPF_FMT = r'^\d{3}\.\d{3}\.\d{3}-\d{2}$'
+    CPF_DIGITS = r'^\d{11}$'
+    strict = s.str.fullmatch(STRICT_FMT, na=False).sum()
+    loose  = s.str.fullmatch(LOOSE_DIGITS, na=False).sum()
+    cpf_f  = s.str.fullmatch(CPF_FMT, na=False).sum()
+    cpf_d  = s.str.fullmatch(CPF_DIGITS, na=False).sum()
+    score = (1.00 * strict + 0.50 * loose - 0.70 * cpf_f - 0.40 * cpf_d) / n
+    return max(0.0, min(1.0, float(score)))
+
+
+def detect_brazil_phone_column(df: pd.DataFrame) -> tuple[str, pd.Series]:
+    cols = df.select_dtypes(include=["object", "string"]).columns
+    if not len(cols):
+        raise ValueError("DataFrame não tem colunas textuais (object/string).")
+    scores = {col: _score_phone_series(df[col]) for col in cols}
+    best = max(scores, key=scores.get)
+    return best, pd.Series(scores, name="score").sort_values(ascending=False)
