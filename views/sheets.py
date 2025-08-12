@@ -194,7 +194,8 @@ def render_whatsapp_fragment():
             with st.container(key='worksheet_container_key', border=True):
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
                 st.dataframe(st.session_state['df_wpp'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
-                st.caption("Revise a sua planilha antes de disparar ➡️")
+                st.caption("Revise a sua planilha antes de disparar.")
+                st.caption("Quando estiver pronto, passe para a próxima aba ➡️.")
         with message_tab:
             with st.container(key='message_container_key', border=True):
                 st.subheader("📝 Modelo de mensagem")
