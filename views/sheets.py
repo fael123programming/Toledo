@@ -189,10 +189,12 @@ def render_whatsapp_fragment():
         st.session_state.df_name = None
         st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
-        with st.form("send_messages_form", border=False):
+        worksheet_tab, message_tab, lines_tab, time_tab, phone_tab, start_tab = st.tabs(['Planilha', 'Mensagem', 'Linhas', 'Intervalo', 'Telefone', 'Iniciar'])
+        with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
                 st.dataframe(st.session_state['df_wpp'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
+        with message_tab:
             with st.container(key='message_container_key', border=True):
                 st.subheader("📝 Modelo de mensagem")
                 message_template = st.text_area(
@@ -203,6 +205,7 @@ def render_whatsapp_fragment():
                     max_chars=5000
                 )
                 st.caption(f"Estas são as colunas disponíveis na planilha: {', '.join(st.session_state['df_wpp'].columns)}")
+        with lines_tab:
             with st.container(key='special_params_container_key', border=True):
                 st.subheader("📍 Linhas para disparar")
                 from_col, to_col = st.columns(2, vertical_alignment="center")
@@ -224,28 +227,29 @@ def render_whatsapp_fragment():
                         step=1,
                         key="to_col_select_key"
                     )
-                st.subheader("⏳ Tempo entre cada disparo")
-                start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
-                with start_secs_col:
-                    start_secs_select = st.number_input(
-                        "Aguardar de (segundos)",
-                        min_value=0,
-                        max_value=60,
-                        value=1,
-                        step=1,
-                        key="start_secs_select_key"
-                    )
-                with end_secs_col:
-                    end_secs_select = st.number_input(
-                        "Aguardar até (segundos)",
-                        min_value=start_secs_select,
-                        max_value=60,
-                        value=30,
-                        step=1,
-                        key="end_secs_select_key"
-                    )
-                st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
-            
+                    st.subheader("⏳ Tempo entre cada disparo")
+        with time_tab:
+            start_secs_col, end_secs_col = st.columns(2, vertical_alignment="center")
+            with start_secs_col:
+                start_secs_select = st.number_input(
+                    "Aguardar de (segundos)",
+                    min_value=0,
+                    max_value=60,
+                    value=1,
+                    step=1,
+                    key="start_secs_select_key"
+                )
+            with end_secs_col:
+                end_secs_select = st.number_input(
+                    "Aguardar até (segundos)",
+                    min_value=start_secs_select,
+                    max_value=60,
+                    value=30,
+                    step=1,
+                    key="end_secs_select_key"
+                )
+            st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
+        with phone_tab:
             if st.form_submit_button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
