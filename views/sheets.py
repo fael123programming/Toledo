@@ -127,6 +127,7 @@ def render_whatsapp_fragment():
         with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
+                st.info("Revise a sua planilha antes de disparar. Quando estiver pronto, passe para a próxima aba ➡️.")
                 cols = st.session_state['df_wpp'].columns.tolist()
                 may_access, msg = assertiva.check_assertiva_access()
                 col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
@@ -173,7 +174,6 @@ def render_whatsapp_fragment():
                             st.rerun(scope="app")
                     except Exception as e:
                         st.error(f"Erro ao salvar alterações: {e}")
-                st.info("Revise a sua planilha antes de disparar. Quando estiver pronto, passe para a próxima aba ➡️.")
         with message_tab:
             with st.container(key='message_container_key', border=True):
                 st.subheader("📝 Modelo de mensagem")
