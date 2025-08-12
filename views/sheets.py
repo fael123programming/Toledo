@@ -192,7 +192,7 @@ def render_whatsapp_fragment():
         with st.form("send_messages_form", border=False):
             with st.container(key='worksheet_container_key', border=True):
                 st.subheader(f"📊 Planilha {st.session_state['df_name']}")
-                st.dataframe(st.session_state['worksheet'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
+                st.dataframe(st.session_state['df_wpp'], use_container_width=True, hide_index=True, key=f"loaded_worksheet_df_{st.session_state['df_name']}")
             with st.container(key='message_container_key', border=True):
                 st.subheader("📝 Modelo de mensagem")
                 message_template = st.text_area(
@@ -245,6 +245,7 @@ def render_whatsapp_fragment():
                         key="end_secs_select_key"
                     )
                 st.caption("A cada disparo, será aplicado um atraso aleatório (em segundos) entre Aguardar de e Aguardar até.")
+            
             if st.form_submit_button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
