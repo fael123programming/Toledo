@@ -290,18 +290,19 @@ def render_whatsapp_fragment():
                 for _, row in subset.iterrows():
                     perfil = random.choice(list(st.secrets["ultramsg"].keys()))
                     token = st.secrets["ultramsg"][perfil]["TOKEN"]
-                    response = wpp.send_wpp_msg(row["mensagem"], row[col_name_dest], token)
-                    try:
-                        if response["send"]:
-                            st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
-                        else:
-                            st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
-                    except Exception as e:
-                        st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
-                    finally:
-                        r = random.randint(start_secs_select, end_secs_select)
-                        st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
-                        time.sleep(r)
+                    st.write(row["mensagem"], row[col_name_dest], token)
+                    # response = wpp.send_wpp_msg(row["mensagem"], row[col_name_dest], token)
+                    # try:
+                    #     if response["send"]:
+                    #         st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
+                    #     else:
+                    #         st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
+                    # except Exception as e:
+                    #     st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
+                    # finally:
+                    #     r = random.randint(start_secs_select, end_secs_select)
+                    #     st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
+                    #     time.sleep(r)
 
 
 def main():
