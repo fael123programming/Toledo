@@ -8,6 +8,7 @@ from utils import assertiva
 import streamlit as st
 from io import BytesIO
 import pandas as pd
+import random
 import uuid
 
 
@@ -272,17 +273,30 @@ def render_whatsapp_fragment():
                     help="Selecione a coluna que contenha os números de telefone para enviar as mensagens"
                 )
         with start_tab:
-            st.write(st.secrets)
             if st.button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
                 type="primary",
-                key="send_msgs_btn_key"
+                key="send_msgs_btn_key",
+                disabled=len(message_template.strip()) == 0 or from_col_select > to_col_select or start_secs_select > end_secs_select
             ):
-                ultramsg_conf = st.secrets["ultramsg"]["rafael"]
-                token = ultramsg_conf["TOKEN"]
-                response = wpp.send_wpp_msg("Olá, será que está funcionando? Veremos haha", "5562981204899", token)
-                st.write(response)
+                df_edited["mensagem"] = df_edited.apply(lambda row: message_template.strip().format(**row.to_dict()), axis=1)
+                start_1b = int(from_col_select)
+                end_1b = int(to_col_select)
+                start = max(0, start_1b - 1)
+                end = min(len(df_edited) - 1, end_1b - 1)
+                subset = df_edited.iloc[start:end + 1]
+                for _, row in subset.iterrows():
+                    perfil = random.choice(list(st.secrets["ultramsg"].keys()))
+                    token = st.secrets["ultramsg"][perfil]["TOKEN"]
+                    response = wpp.send_wpp_msg(row["mensagem"], row[col_name_dest], token)
+                    try:
+                        if response["send"]:
+                            st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
+                        else:
+                            st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
+                    except Exception as e:
+                        st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
 
 
 def main():
