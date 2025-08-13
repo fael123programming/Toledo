@@ -211,7 +211,7 @@ def render_whatsapp_fragment():
                 with from_col:
                     from_col_select = st.number_input(
                         "Enviar de (linha)",
-                        min_value=0,
+                        min_value=1,
                         max_value=len(st.session_state['df_wpp']),
                         value=1,
                         step=1,
@@ -287,16 +287,18 @@ def render_whatsapp_fragment():
                 start = max(0, start_1b - 1)
                 end = min(len(df_edited) - 1, end_1b - 1)
                 subset = df_edited.iloc[start:end + 1]
-                for _, row in subset.iterrows():
+                for i, row in subset.iterrows():
                     perfil = random.choice(list(st.secrets["ultramsg"].keys()))
                     token = st.secrets["ultramsg"][perfil]["TOKEN"]
                     response = wpp.send_wpp_msg(row["mensagem"], str(row[col_name_dest]), token)
-                    st.write(response)
                     try:
-                        st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
+                        if response["send"] == "true":
+                            st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
+                        else:
+                            st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
                     except Exception as e:
                         st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
-                    finally:
+                    if i < len(subset) - 1:
                         r = random.randint(start_secs_select, end_secs_select)
                         st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
                         time.sleep(r)
