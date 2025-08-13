@@ -1,4 +1,3 @@
-import pandas as pd
 from utils import assertiva, algorithms
 from supabase import create_client
 from dotenv import load_dotenv
@@ -6,6 +5,7 @@ from datetime import datetime
 from utils import worksheets
 import streamlit as st
 from io import BytesIO
+import pandas as pd
 import uuid
 
 
@@ -15,6 +15,18 @@ BUCKET = "planilhas"
 
 auth_ok = bool(st.secrets["connections"]["supabase"]["SUPABASE_URL"] and st.secrets["connections"]["supabase"]["SUPABASE_KEY"])
 client = create_client(st.secrets["connections"]["supabase"]["SUPABASE_URL"], st.secrets["connections"]["supabase"]["SUPABASE_KEY"]) if auth_ok else None
+
+
+def load_ultramsg_env():
+    ultramsg_vars = {}
+    all_ultramsg = st.secrets["ultramsg"].to_dict()
+    for key, creds in all_ultramsg.items():
+        ultramsg_vars[key] = {
+            "ID": creds["ID"],
+            "TOKEN": creds["TOKEN"],
+            "PHONE_NUMBER": creds["PHONE_NUMBER"]
+        }
+    st.session_state["ultramsg_vars"] = ultramsg_vars
 
 
 @st.fragment
@@ -268,6 +280,7 @@ def render_whatsapp_fragment():
 
 
 def main():
+    load_ultramsg_env()
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
