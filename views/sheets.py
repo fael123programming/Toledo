@@ -250,7 +250,7 @@ def render_whatsapp_fragment():
             with st.container(key='phones_container_key', border=True):
                 st.subheader("📱 Telefones")
                 st.info("Indique quais números de telefone usar nos disparos. Quando estiver pronto, passe para a próxima aba ➡️.")
-                phone_owner_opts = list(map(lambda val: val.title(), st.session_state["ultramsg_vars"].keys()))
+                phone_owner_opts = list(map(lambda val: val.title(), st.secrets["ultramsg"].keys()))
                 owner_select = st.multiselect(
                     "📞 Selecione o(s) remetente(s)",
                     options=phone_owner_opts,
@@ -259,7 +259,7 @@ def render_whatsapp_fragment():
                     help="Selecione o(s) remetente(s) para enviar as mensagens."
                 )
                 for owner in owner_select:
-                    st.info(st.session_state["ultramsg_vars"][owner.lower()]["PHONE_NUMBER"])
+                    st.info(st.secrets["ultramsg"][owner.lower()]["PHONE_NUMBER"])
                 st.caption("Os disparos são feitos alternadamente entre um e outro telefone de forma sequencial.")
                 detected_col = algorithms.detect_brazil_phone_column(st.session_state['df_wpp'])[0]
                 col_name_dest = st.selectbox(
@@ -281,7 +281,6 @@ def render_whatsapp_fragment():
 
 
 def main():
-    load_ultramsg_env()
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
