@@ -292,6 +292,7 @@ def render_whatsapp_fragment():
                     token = st.secrets["ultramsg"][perfil]["TOKEN"]
                     response = wpp.send_wpp_msg(row["mensagem"], str(row[col_name_dest]), token)
                     try:
+                        st.write(response)
                         if response["send"]:
                             st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
                         else:
