@@ -270,6 +270,7 @@ def render_whatsapp_fragment():
                     help="Selecione a coluna que contenha os números de telefone para enviar as mensagens"
                 )
         with start_tab:
+            st.write(st.secrets)
             if st.button(
                 "Enviar mensagens",
                 help="Enviar mensagens para os contatos da planilha selecionada.",
