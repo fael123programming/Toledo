@@ -291,12 +291,9 @@ def render_whatsapp_fragment():
                     perfil = random.choice(list(st.secrets["ultramsg"].keys()))
                     token = st.secrets["ultramsg"][perfil]["TOKEN"]
                     response = wpp.send_wpp_msg(row["mensagem"], str(row[col_name_dest]), token)
+                    st.write(response)
                     try:
-                        st.write(response)
-                        if response["send"]:
-                            st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
-                        else:
-                            st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
+                        st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
                     except Exception as e:
                         st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
                     finally:
