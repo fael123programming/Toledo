@@ -291,6 +291,7 @@ def render_whatsapp_fragment():
                     perfil = random.choice(list(st.secrets["ultramsg"].keys()))
                     token = st.secrets["ultramsg"][perfil]["TOKEN"]
                     st.write(row["mensagem"], row[col_name_dest], token)
+                    time.sleep(30)
                     # response = wpp.send_wpp_msg(row["mensagem"], row[col_name_dest], token)
                     # try:
                     #     if response["send"]:
