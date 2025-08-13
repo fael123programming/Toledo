@@ -1,8 +1,10 @@
-from utils import assertiva, algorithms
 from supabase import create_client
+from utils import whatsapp as wpp
 from dotenv import load_dotenv
 from datetime import datetime
+from utils import algorithms
 from utils import worksheets
+from utils import assertiva
 import streamlit as st
 from io import BytesIO
 import pandas as pd
@@ -277,7 +279,10 @@ def render_whatsapp_fragment():
                 type="primary",
                 key="send_msgs_btn_key"
             ):
-                pass
+                ultramsg_conf = st.secrets["ultramsg"]["rafael"]
+                token = ultramsg_conf["TOKEN"]
+                response = wpp.send_wpp_msg("Olá, será que está funcionando? Veremos haha", "5562981204899", token)
+                st.write(response)
 
 
 def main():
