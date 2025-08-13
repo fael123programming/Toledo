@@ -9,6 +9,7 @@ import streamlit as st
 from io import BytesIO
 import pandas as pd
 import random
+import time
 import uuid
 
 
@@ -297,6 +298,10 @@ def render_whatsapp_fragment():
                             st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
                     except Exception as e:
                         st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
+                    finally:
+                        r = random.randint(start_secs_select, end_secs_select)
+                        st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
+                        time.sleep(r)
 
 
 def main():
