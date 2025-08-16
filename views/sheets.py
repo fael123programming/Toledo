@@ -199,19 +199,10 @@ def render_whatsapp_fragment():
                     num_rows="dynamic",
                     disabled='getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']
                 )
-                # if not df_edited.equals(st.session_state['df_wpp']):
-                #     with st.container(key='diff_container'):
-                #         left_col, right_col = st.columns(2, vertical_alignment='center')
-                #         with left_col:
-                #             st.write(df_edited)
-                #         with right_col:
-                #             st.write(st.session_state['df_wpp'])
-                # st.write(df_edited.equals(st.session_state['df_wpp']))
                 if st.button(
                     "Salvar Alterações",
                     key=f"save_button_{st.session_state['df_name']}",
                     disabled=df_edited.equals(st.session_state['df_wpp']) and not st.session_state['assertiva_edited']
-                    # disabled=df_edited.equals(st.session_state['df_wpp'])
                 ):
                     try:
                         buf = BytesIO()
@@ -316,29 +307,33 @@ def render_whatsapp_fragment():
                 help="Enviar mensagens para os contatos da planilha selecionada.",
                 type="primary",
                 key="send_msgs_btn_key",
-                disabled=len(message_template.strip()) == 0 or from_col_select > to_col_select or start_secs_select > end_secs_select
+                disabled=len(message_template.strip()) == 0 or from_col_select > to_col_select or start_secs_select > end_secs_select,
+                use_container_width=True
             ):
-                df_edited["mensagem"] = df_edited.apply(lambda row: message_template.strip().format(**row.to_dict()), axis=1)
-                start_1b = int(from_col_select)
-                end_1b = int(to_col_select)
-                start = max(0, start_1b - 1)
-                end = min(len(df_edited) - 1, end_1b - 1)
-                subset = df_edited.iloc[start:end + 1]
-                for i, row in subset.iterrows():
-                    perfil = random.choice(list(st.secrets["ultramsg"].keys()))
-                    token = st.secrets["ultramsg"][perfil]["TOKEN"]
-                    response = wpp.send_wpp_msg(row["mensagem"], str(row[col_name_dest]), token)
-                    try:
-                        if response["sent"] == "true":
-                            st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
-                        else:
-                            st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
-                    except Exception as e:
-                        st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
-                    if i < len(subset) - 1:
-                        r = random.randint(start_secs_select, end_secs_select)
-                        st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
-                        time.sleep(r)
+                pass
+                # df_edited["mensagem"] = df_edited.apply(lambda row: message_template.strip().format(**row.to_dict()), axis=1)
+                # start_1b = int(from_col_select)
+                # end_1b = int(to_col_select)
+                # start = max(0, start_1b - 1)
+                # end = min(len(df_edited) - 1, end_1b - 1)
+                # subset = df_edited.iloc[start:end + 1]
+                # st.write(subset)
+                # for i, row in subset.iterrows():
+                #     st.write()
+                    # perfil = random.choice(list(st.secrets["ultramsg"].keys()))
+                    # token = st.secrets["ultramsg"][perfil]["TOKEN"]
+                    # response = wpp.send_wpp_msg(row["mensagem"], str(row[col_name_dest]), token)
+                    # try:
+                    #     if response["sent"] == "true":
+                    #         st.success(f"Mensagem enviada para \"{row[col_name_dest]}\" ✅")
+                    #     else:
+                    #         st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌")
+                    # except Exception as e:
+                    #     st.error(f"Mensagem não enviada para \"{row[col_name_dest]}\" ❌ ({str(e)})")
+                    # if i < len(subset) - 1:
+                    #     r = random.randint(start_secs_select, end_secs_select)
+                    #     st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
+                    #     time.sleep(r)
 
 
 def main():
