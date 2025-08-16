@@ -138,30 +138,29 @@ def render_whatsapp_fragment():
         st.subheader("📲 Disparando mensagens no WhatsApp...")
         len_sending_subset = len(st.session_state['sending_subset'])
         progress = st.progress(0, f"0% (0/{len_sending_subset})")
-        container = st.empty()
+        placeholder_container = st.empty()
         for i, row in st.session_state['sending_subset'].iterrows():
             perfil = random.choice(list(st.secrets["ultramsg"].keys()))
             token = st.secrets["ultramsg"][perfil]["TOKEN"]
             response = wpp.send_wpp_msg(row["mensagem"], str(row[st.session_state['sending_col_name_dest']]), token)
             try:
                 progress.progress((i + 1) / len_sending_subset, f"{(i + 1) / len_sending_subset * 100:.2f}% ({i + 1}/{len_sending_subset})")
-                with container:
+                with placeholder_container.container():
                     if response["sent"] == "true":
                         st.success(f"Mensagem enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ✅")
                     else:
                         st.error(f"Mensagem não enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ❌")
             except Exception as e:
-                with container:
+                with placeholder_container.container():
                     st.write(f"Mensagem não enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ❌")
                     st.error(f"Ocorreu o erro: {e}")
             if i < len_sending_subset - 1:
                 r = random.randint(st.session_state['sending_start_secs_select'], st.session_state['sending_end_secs_select'])
-                with container:
+                with placeholder_container.container():
                     st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
                     time.sleep(r)
-                container.empty()
+                placeholder_container.empty()
         st.session_state['sending_msgs'] = False
-        st.rerun(scope='fragment')
     else:
         if st.button(
             "↩️ Voltar",

@@ -17,3 +17,4 @@ st-supabase-connection==2.1.0
 streamlit-cookies-manager==0.2.0
 spacy==3.7.5
 pt_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/pt_core_news_sm-3.7.0/pt_core_news_sm-3.7.0-py3-none-any.whl
+google-genai
