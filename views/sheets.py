@@ -194,7 +194,13 @@ def render_whatsapp_fragment():
                     num_rows="dynamic",
                     disabled='getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']
                 )
-                st.write(st.session_state['assertiva_edited'])
+                if not df_edited.equals(st.session_state['df_wpp']):
+                    with st.container(key='diff_container'):
+                        left_col, right_col = st.columns(2, vertical_alignment='center')
+                        with left_col:
+                            st.write(df_edited)
+                        with right_col:
+                            st.write(st.session_state['df_wpp'])
                 st.write(df_edited.equals(st.session_state['df_wpp']))
                 if st.button(
                     "Salvar Alterações",
