@@ -133,9 +133,10 @@ def render_whatsapp_fragment():
         help='Voltar para gerenciamento de planilhas',
         type='tertiary'
     ):
-        st.session_state.show_wpp_view = False
-        st.session_state.df_wpp = None
-        st.session_state.df_name = None
+        st.session_state['show_wpp_view'] = False
+        st.session_state['df_wpp'] = None
+        st.session_state['df_name'] = None
+        st.session_state['assertiva_edited'] = False
         st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
         if "assertiva_edited" not in st.session_state:
