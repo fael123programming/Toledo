@@ -26,7 +26,6 @@ def _get_access_token() -> str:
     resp = requests.post(AUTH_URL, headers=headers, data=data, timeout=10)
     resp.raise_for_status()
     payload = resp.json()
-    return payload
     _token_cache["access_token"] = payload["access_token"]
     _token_cache["exp"]          = time.time() + payload.get("expires_in", 50)
     return _token_cache["access_token"]
