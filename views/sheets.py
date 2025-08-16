@@ -167,7 +167,7 @@ def render_whatsapp_fragment():
                         st.session_state['column_getting_phones_assertiva'] = col_name
                         st.rerun(scope='fragment')
                 if 'getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']:
-                    with st.status("Consultando assertiva..."):
+                    with st.status("Consultando Assertiva..."):
                         phones_list = []
                         for i, valor_column in enumerate(st.session_state['df_wpp'][st.session_state['column_getting_phones_assertiva']].tolist()):
                             try:
@@ -185,6 +185,7 @@ def render_whatsapp_fragment():
                             finally:
                                 time.sleep(2)
                         st.session_state["df_wpp"][f"Telefone {st.session_state['column_getting_phones_assertiva']}"] = pd.Series(phones_list)
+                        st.session_state['assertiva_edited'] = True
                         st.session_state['getting_phones_assertiva'] = False
                         st.rerun(scope='fragment')
                 df_edited = st.data_editor(
@@ -198,7 +199,7 @@ def render_whatsapp_fragment():
                 if st.button(
                     "Salvar Alterações",
                     key=f"save_button_{st.session_state['df_name']}",
-                    disabled=df_edited.equals(st.session_state['df_wpp'])
+                    disabled=df_edited.equals(st.session_state['df_wpp']) or not ('assertiva_edited' in st.session_state and st.session_state['assertiva_edited'])
                 ):
                     try:
                         buf = BytesIO()
@@ -210,6 +211,7 @@ def render_whatsapp_fragment():
                         worksheets.delete_cloud_file(st.session_state['df_name'])
                         if worksheets.upload_to_cloud(buf):
                             st.success(f"Alterações salvas em {st.session_state['df_name']}!")
+                            st.session_state['assertiva_edited'] = False
                             st.rerun(scope="app")
                     except Exception as e:
                         st.error(f"Erro ao salvar alterações: {e}")
