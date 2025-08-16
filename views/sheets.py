@@ -174,7 +174,6 @@ def render_whatsapp_fragment():
                                 # result = assertiva.get_best_whatsapp_phone(valor_column)
                                 # phone_e164 = result["e164"] if result else None
                                 phone_e164 = f"funcionou {i}"
-                                1/0
                             except Exception as e:
                                 with st.container(key=f"getting_assertiva_phones_{i}_{str(valor_column)}", border=True):
                                     st.write(f"Erro ao buscar telefone de \"{valor_column}\".")
@@ -199,7 +198,7 @@ def render_whatsapp_fragment():
                 if st.button(
                     "Salvar Alterações",
                     key=f"save_button_{st.session_state['df_name']}",
-                    disabled=df_edited.equals(st.session_state['df_wpp']) or ('assertiva_edited' not in st.session_state and not st.session_state['assertiva_edited'])
+                    disabled=df_edited.equals(st.session_state['df_wpp']) and not 'assertiva_edited' in st.session_state and st.session_state['assertiva_edited']
                 ):
                     try:
                         buf = BytesIO()
