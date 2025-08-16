@@ -131,7 +131,7 @@ def render_whatsapp_fragment():
             "❌ Cancelar",
             key=f"cancel_btn_worksheet_{st.session_state['df_name']}",
             help='Cancelar disparo de mensagens no WhatsApp',
-            type='tertiary'
+            type='secondary'
         ):
             st.session_state['sending_msgs'] = False
             st.rerun(scope='fragment')
@@ -156,8 +156,9 @@ def render_whatsapp_fragment():
                     st.error(f"Ocorreu o erro: {e}")
             if i < len_sending_subset - 1:
                 r = random.randint(st.session_state['sending_start_secs_select'], st.session_state['sending_end_secs_select'])
-                st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
-                time.sleep(r)
+                with container:
+                    st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
+                    time.sleep(r)
                 container.empty()
     else:
         if st.button(
