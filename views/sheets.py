@@ -154,7 +154,7 @@ def render_whatsapp_fragment():
                         index=cols.index(detected_doc_col) if detected_doc_col in cols else 0,
                         key="col_name_assertiva_key",
                         help="Selecione a coluna que contém os nomes completos" if may_access else msg,
-                        disabled=not may_access
+                        disabled=not not may_access
                     )
                 with search_assertiva_col:
                     search_assertiva = st.button(
