@@ -130,7 +130,8 @@ def render_whatsapp_fragment():
     if st.button(
         "↩️ Voltar",
         key=f"back_btn_worksheet_{st.session_state['df_name']}",
-        help='Voltar para gerenciamento de planilhas'
+        help='Voltar para gerenciamento de planilhas',
+        type='tertiary'
     ):
         st.session_state.show_wpp_view = False
         st.session_state.df_wpp = None
