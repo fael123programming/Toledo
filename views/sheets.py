@@ -153,7 +153,7 @@ def render_whatsapp_fragment():
                     col_name = st.selectbox(
                         'Nome da coluna',
                         options=cols,
-                        index=cols.index(detected_col) if detected_col in cols else 0,
+                        index=cols.index(detected_doc_col) if detected_doc_col in cols else 0,
                         key="col_name_assertiva_key",
                         help="Selecione a coluna que contém os nomes completos" if may_access else msg,
                         disabled=not may_access
