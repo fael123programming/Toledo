@@ -166,7 +166,7 @@ def render_whatsapp_fragment():
                         st.session_state['getting_phones_assertiva'] = True
                         st.session_state['column_getting_phones_assertiva'] = col_name
                         st.rerun(scope='fragment')
-                if st.session_state['getting_phones_assertiva']:
+                if 'getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']:
                     with st.spinner("Consultando assertiva...", show_time=True):
                         phones_list = []
                         for i, valor_column in enumerate(st.session_state['df_wpp'][st.session_state['column_getting_phones_assertiva']].tolist()):
