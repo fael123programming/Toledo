@@ -1,12 +1,13 @@
 import os, time, base64, requests
 from dotenv import load_dotenv
 from typing import Optional
+import streamlit as st
 
 
 load_dotenv()
 
-ASSERTIVA_CLIENT_ID  = os.getenv("ASSERTIVA_CLIENT_ID")
-ASSERTIVA_SECRET     = os.getenv("ASSERTIVA_SECRET")
+ASSERTIVA_CLIENT_ID  = st.secrets["assertiva"]["ASSERTIVA_CLIENT_ID"]
+ASSERTIVA_SECRET     = st.secrets["assertiva"]["ASSERTIVA_SECRET"]
 AUTH_URL             = "https://api.assertivasolucoes.com.br/oauth2/v3/token"
 PRODUCT_BASE         = "https://api.assertivasolucoes.com.br"         # raiz dos produtos
 LOCALIZE_PHONE_PATH  = "/localize/v3/pessoas/telefone"                # ajuste p/ seu contrato

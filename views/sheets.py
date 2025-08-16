@@ -1,10 +1,8 @@
+from utils import algorithms, worksheets, assertiva
 from supabase import create_client
 from utils import whatsapp as wpp
 from dotenv import load_dotenv
 from datetime import datetime
-from utils import algorithms
-from utils import worksheets
-from utils import assertiva
 import streamlit as st
 from io import BytesIO
 import pandas as pd
@@ -305,6 +303,7 @@ def render_whatsapp_fragment():
 
 
 def main():
+    st.write(assertiva._get_access_token())
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
