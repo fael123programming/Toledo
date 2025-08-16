@@ -137,7 +137,6 @@ def render_whatsapp_fragment():
         st.session_state.df_name = None
         st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
-        st.session_state['getting_phones_assertiva'] = False
         worksheet_tab, message_tab, lines_tab, time_tab, phone_tab, start_tab = st.tabs(['Planilha', 'Mensagem', 'Linhas', 'Intervalo', 'Telefone', 'Iniciar'])
         with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
