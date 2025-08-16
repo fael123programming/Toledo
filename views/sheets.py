@@ -303,7 +303,8 @@ def render_whatsapp_fragment():
 
 
 def main():
-    st.write(assertiva.get_best_whatsapp_phone("064.854.071-54"))
+    # st.write(assertiva.get_best_whatsapp_phone("064.854.071-54"))
+    st.write(assertiva._get_access_token())
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
