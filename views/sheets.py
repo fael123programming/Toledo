@@ -146,7 +146,7 @@ def render_whatsapp_fragment():
                 with container:
                     st.write(f"Mensagem não enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ❌")
                     st.error(f"Ocorreu o erro: {e}")
-            if i < len(subset) - 1:
+            if i < len_sending_subset - 1:
                 r = random.randint(st.session_state['sending_start_secs_select'], st.session_state['sending_end_secs_select'])
                 st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
                 time.sleep(r)
