@@ -1,17 +1,13 @@
 from utils import algorithms, worksheets, assertiva
 from supabase import create_client
 from utils import whatsapp as wpp
-from dotenv import load_dotenv
 import streamlit as st
 from io import BytesIO
 import pandas as pd
-import locale
 import random
 import time
 import uuid
 
-
-locale.setlocale(locale.LC_ALL, 'pt_BR.UTF-8')
 
 BUCKET = "planilhas"
 
@@ -140,7 +136,7 @@ def render_whatsapp_fragment():
             token = st.secrets["ultramsg"][perfil]["TOKEN"]
             response = wpp.send_wpp_msg(row["mensagem"], str(row[st.session_state['sending_col_name_dest']]), token)
             try:
-                progress.progress((i + 1) / len_sending_subset * 100, f"{locale.format_string('%.2f', (i + 1) / len_sending_subset * 100, grouping=True)}% ({i + 1}/{len_sending_subset})")
+                progress.progress((i + 1) / len_sending_subset * 100, f"{(i + 1) / len_sending_subset * 100:%.2f}% ({i + 1}/{len_sending_subset})")
                 with container:
                     if response["sent"] == "true":
                         st.success(f"Mensagem enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ✅")
