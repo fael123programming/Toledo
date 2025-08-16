@@ -195,6 +195,7 @@ def render_whatsapp_fragment():
                     disabled='getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']
                 )
                 st.write(st.session_state['assertiva_edited'])
+                st.write(df_edited.equals(st.session_state['df_wpp']))
                 if st.button(
                     "Salvar Alterações",
                     key=f"save_button_{st.session_state['df_name']}",
