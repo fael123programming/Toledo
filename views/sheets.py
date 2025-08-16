@@ -127,6 +127,14 @@ def show_upload_dialog():
 @st.fragment
 def render_whatsapp_fragment():
     if 'sending_msgs' in st.session_state and st.session_state['sending_msgs']:
+        if st.button(
+            "❌ Cancelar",
+            key=f"cancel_btn_worksheet_{st.session_state['df_name']}",
+            help='Cancelar disparo de mensagens no WhatsApp',
+            type='tertiary'
+        ):
+            st.session_state['sending_msgs'] = False
+            st.rerun(scope='fragment')
         st.subheader("📲 Disparando mensagens no WhatsApp...")
         len_sending_subset = len(st.session_state['sending_subset'])
         progress = st.progress(0, f"0% (0/{len_sending_subset})")
