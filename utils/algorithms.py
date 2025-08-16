@@ -1,3 +1,4 @@
+from typing import Tuple
 import pandas as pd
 import numpy as np
 import unicodedata
@@ -120,5 +121,131 @@ def detect_brazil_phone_column(df: pd.DataFrame) -> tuple[str, pd.Series]:
     if not len(cols):
         raise ValueError("DataFrame não tem colunas textuais (object/string).")
     scores = {col: _score_phone_series(df[col]) for col in cols}
+    best = max(scores, key=scores.get)
+    return best, pd.Series(scores, name="score").sort_values(ascending=False)
+
+
+# ----------------- Utils básicos -----------------
+def _only_digits(s: str) -> str:
+    return re.sub(r"\D", "", s or "")
+
+def _strip_accents_lower(s: str) -> str:
+    if s is None:
+        return ""
+    s = unicodedata.normalize("NFKD", str(s))
+    s = "".join(ch for ch in s if not unicodedata.combining(ch))
+    return s.lower()
+
+# ----------------- Validação CPF/CNPJ -----------------
+def _is_valid_cpf(d: str) -> bool:
+    d = _only_digits(d)
+    if len(d) != 11 or d == d[0] * 11:
+        return False
+    nums = list(map(int, d))
+    # digito 1
+    s = sum((10 - i) * nums[i] for i in range(9))
+    r = (s * 10) % 11
+    if r == 10:
+        r = 0
+    if r != nums[9]:
+        return False
+    # digito 2
+    s = sum((11 - i) * nums[i] for i in range(10))
+    r = (s * 10) % 11
+    if r == 10:
+        r = 0
+    return r == nums[10]
+
+def _is_valid_cnpj(d: str) -> bool:
+    d = _only_digits(d)
+    if len(d) != 14 or d == d[0] * 14:
+        return False
+    nums = list(map(int, d))
+    def dv(calc_nums, pesos):
+        s = sum(n * p for n, p in zip(calc_nums, pesos))
+        r = s % 11
+        return 0 if r < 2 else 11 - r
+    dv1 = dv(nums[:12], [5,4,3,2,9,8,7,6,5,4,3,2])
+    if dv1 != nums[12]:
+        return False
+    dv2 = dv(nums[:13], [6,5,4,3,2,9,8,7,6,5,4,3,2])
+    return dv2 == nums[13]
+
+# ----------------- Regex de formatos -----------------
+CPF_REGEX  = re.compile(r"\b\d{3}\.?\d{3}\.?\d{3}-?\d{2}\b")
+CNPJ_REGEX = re.compile(r"\b\d{2}\.?\d{3}\.?\d{3}/?\d{4}-?\d{2}\b")
+PHONE_LIKE = re.compile(r"^\s*\(?\d{2}\)?\s*\d{4,5}-?\d{4}\s*$")  # para penalizar falsos positivos (telefone)
+
+# ----------------- Scoring de uma série -----------------
+def _score_polo_passivo_doc_series(s: pd.Series, col_name: str) -> float:
+    # 1) Sinal por nome da coluna / rótulo no topo
+    name = _strip_accents_lower(col_name)
+    name_bonus = 0.0
+    if "polo passivo" in name:
+        name_bonus += 30.0
+    elif "passivo" in name:
+        name_bonus += 20.0
+
+    # tenta usar o(s) primeiro(s) valor(es) como possível rótulo (caso o header esteja nos dados)
+    first_vals = [str(v) for v in s.head(3).dropna().astype(str)]
+    top_label = _strip_accents_lower(" ".join(first_vals[:1]))  # usa só o 1º por padrão
+    if "polo passivo" in top_label:
+        name_bonus += 15.0
+    elif "passivo" in top_label:
+        name_bonus += 8.0
+
+    # 2) Sinal por padrão/validação de CPF/CNPJ
+    notnull = s.dropna().astype(str)
+    n = len(notnull)
+    if n == 0:
+        return name_bonus  # só o nome vai contar
+
+    # contagens
+    cpf_valid = cnpj_valid = cpf_fmt = cnpj_fmt = phone_like = 0
+
+    for v in notnull:
+        vv = str(v).strip()
+        digits = _only_digits(vv)
+        # formatos (regex)
+        if CPF_REGEX.search(vv):
+            cpf_fmt += 1
+        if CNPJ_REGEX.search(vv):
+            cnpj_fmt += 1
+        # validação por dígitos
+        if len(digits) == 11 and _is_valid_cpf(digits):
+            cpf_valid += 1
+        elif len(digits) == 14 and _is_valid_cnpj(digits):
+            cnpj_valid += 1
+        # telefone-like (para evitar confusão com celulares)
+        if PHONE_LIKE.match(vv):
+            phone_like += 1
+
+    # taxas
+    cpf_rate      = cpf_valid / n
+    cnpj_rate     = cnpj_valid / n
+    cpf_fmt_rate  = cpf_fmt / n
+    cnpj_fmt_rate = cnpj_fmt / n
+    phone_rate    = phone_like / n
+
+    # score composto
+    score = 0.0
+    score += 100.0 * (cpf_rate + cnpj_rate)           # válidos têm peso maior
+    score += 25.0  * (cpf_fmt_rate + cnpj_fmt_rate)   # formato ajuda quando não há DV
+    score -= 60.0  * phone_rate                       # penaliza coluna que parece telefone
+    score += name_bonus                               # bônus por "polo passivo"/"passivo"
+
+    return score
+
+# ----------------- Função principal -----------------
+def detect_polo_passivo_doc_column(df: pd.DataFrame) -> Tuple[str, pd.Series]:
+    """
+    Detecta a coluna que contém CPF/CNPJ do POLO PASSIVO.
+    Retorna: (nome_da_coluna, serie_de_scores_decrescente)
+    """
+    cols = df.select_dtypes(include=["object", "string"]).columns
+    if not len(cols):
+        raise ValueError("DataFrame não tem colunas textuais (object/string).")
+
+    scores = {col: _score_polo_passivo_doc_series(df[col], col) for col in cols}
     best = max(scores, key=scores.get)
     return best, pd.Series(scores, name="score").sort_values(ascending=False)

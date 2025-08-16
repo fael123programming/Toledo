@@ -146,7 +146,8 @@ def render_whatsapp_fragment():
                 may_access, msg = assertiva.check_assertiva_access()
                 # may_access, msg = False, 'Sem acesso a Assertiva'
                 col_name_col, search_assertiva_col = st.columns([3, 1], vertical_alignment="bottom")
-                detected_col = algorithms.detect_name_column(st.session_state['df_wpp'])[0]
+                detected_doc_col = algorithms.detect_polo_passivo_doc_column(st.session_state['df_wpp'])[0]
+                st.write(detected_doc_col)
                 # st.write(may_access, msg, datetime.now())
                 with col_name_col:
                     col_name = st.selectbox(
