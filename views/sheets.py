@@ -175,7 +175,6 @@ def render_whatsapp_fragment():
                                 # phone_e164 = result["e164"] if result else None
                                 phone_e164 = f"funcionou {i}"
                                 1/0
-                                time.sleep(10)
                             except Exception as e:
                                 with st.container(key=f"getting_assertiva_phones_{i}_{str(valor_column)}", border=True):
                                     st.write(f"Erro ao buscar telefone de \"{valor_column}\".")
@@ -183,6 +182,8 @@ def render_whatsapp_fragment():
                                     phones_list.append('')
                             else:
                                 phones_list.append(phone_e164)
+                            finally:
+                                time.sleep(2)
                         st.session_state["df_wpp"][f"Telefone {st.session_state['column_getting_phones_assertiva']}"] = pd.Series(phones_list)
                         st.session_state['getting_phones_assertiva'] = False
                         st.rerun(scope='fragment')
