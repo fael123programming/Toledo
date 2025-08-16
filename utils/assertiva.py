@@ -25,7 +25,8 @@ def _get_access_token() -> str:
     data = {"grant_type": "client_credentials"}
     resp = requests.post(AUTH_URL, headers=headers, data=data, timeout=10)
     resp.raise_for_status()
-    payload = resp.json()          # -> {'access_token': '...', 'expires_in': 60, ...}
+    payload = resp.json()
+    st.write(payload)
     _token_cache["access_token"] = payload["access_token"]
     _token_cache["exp"]          = time.time() + payload.get("expires_in", 50)
     return _token_cache["access_token"]
