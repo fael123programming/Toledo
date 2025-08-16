@@ -38,7 +38,7 @@ def download_button(name: str):
             st.session_state[f'gen_down_btn_{name}_bytes'] = worksheets.download_cloud_file(name)
             st.session_state[f'gen_down_btn_{name}'] = False
         st.download_button(
-            label="🡇",
+            label=":material:download",
             data=st.session_state[f'gen_down_btn_{name}_bytes'],
             file_name=name,
             mime="application/octet-stream",
