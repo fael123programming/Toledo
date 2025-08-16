@@ -160,14 +160,14 @@ def render_whatsapp_fragment():
                         index=cols.index(detected_doc_col) if detected_doc_col in cols else 0,
                         key="col_name_assertiva_key",
                         help="Selecione a coluna que contém os nomes completos" if may_access else msg,
-                        disabled=not not may_access
+                        disabled=not may_access
                     )
                 with search_assertiva_col:
                     search_assertiva = st.button(
                         "🔍 Buscar Telefone",
                         key="search_assertiva_btn_key",
                         help="Buscar telefone mais recente usando Assertiva" if may_access else msg,
-                        disabled=not not may_access
+                        disabled=not may_access
                     )
                     if search_assertiva:
                         st.session_state['getting_phones_assertiva'] = True
@@ -178,9 +178,8 @@ def render_whatsapp_fragment():
                         phones_list = []
                         for i, valor_column in enumerate(st.session_state['df_wpp'][st.session_state['column_getting_phones_assertiva']].tolist()):
                             try:
-                                # result = assertiva.get_best_whatsapp_phone(valor_column)
-                                # phone_e164 = result["e164"] if result else None
-                                phone_e164 = "qualquer"
+                                result = assertiva.get_best_whatsapp_phone(valor_column)
+                                phone_e164 = result["e164"] if result else None
                             except Exception as e:
                                 with st.container(key=f"getting_assertiva_phones_{i}_{str(valor_column)}", border=True):
                                     st.write(f"Erro ao buscar telefone de \"{valor_column}\".")
