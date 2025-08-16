@@ -160,6 +160,8 @@ def render_whatsapp_fragment():
                     st.info(f"Aguardando {r} segundo(s) para o próximo disparo...")
                     time.sleep(r)
                 container.empty()
+        st.session_state['sending_msgs'] = False
+        st.rerun(scope='fragment')
     else:
         if st.button(
             "↩️ Voltar",
