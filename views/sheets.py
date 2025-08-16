@@ -48,7 +48,7 @@ def download_button(name: str):
         )
     else:
         gen_down_btn = st.button(
-            label="🡇",
+            label=":material:download",
             key=f"gen_down_btn_{name}",
             help="Gerar botão de download"
         )
