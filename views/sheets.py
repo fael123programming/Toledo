@@ -144,7 +144,7 @@ def render_whatsapp_fragment():
             token = st.secrets["ultramsg"][perfil]["TOKEN"]
             response = wpp.send_wpp_msg(row["mensagem"], str(row[st.session_state['sending_col_name_dest']]), token)
             try:
-                progress.progress((i + 1) / len_sending_subset * 100, f"{(i + 1) / len_sending_subset * 100:.2f}% ({i + 1}/{len_sending_subset})")
+                progress.progress((i + 1) / len_sending_subset, f"{(i + 1) / len_sending_subset * 100:.2f}% ({i + 1}/{len_sending_subset})")
                 with container:
                     if response["sent"] == "true":
                         st.success(f"Mensagem enviada para \"{row[st.session_state['sending_col_name_dest']]}\" ✅")
