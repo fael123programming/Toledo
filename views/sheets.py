@@ -199,7 +199,7 @@ def render_whatsapp_fragment():
                 if st.button(
                     "Salvar Alterações",
                     key=f"save_button_{st.session_state['df_name']}",
-                    disabled=df_edited.equals(st.session_state['df_wpp']) or not ('assertiva_edited' in st.session_state and st.session_state['assertiva_edited'])
+                    disabled=df_edited.equals(st.session_state['df_wpp']) or ('assertiva_edited' not in st.session_state and not st.session_state['assertiva_edited'])
                 ):
                     try:
                         buf = BytesIO()
