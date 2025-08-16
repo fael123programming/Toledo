@@ -192,7 +192,7 @@ def render_whatsapp_fragment():
                     use_container_width=True,
                     hide_index=True,
                     num_rows="dynamic",
-                    disabled=st.session_state['getting_phones_assertiva']
+                    disabled='getting_phones_assertiva' in st.session_state and st.session_state['getting_phones_assertiva']
                 )
                 if st.button(
                     "Salvar Alterações",
