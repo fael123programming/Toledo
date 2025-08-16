@@ -45,14 +45,14 @@ def download_button(name: str):
             key=f"download_{name}",
             help="Baixar planilha",
             type="primary",
-            icon=":material/download"
+            icon=":material/download:"
         )
     else:
         gen_down_btn = st.button(
             label="",
             key=f"gen_down_btn_{name}",
             help="Gerar botão de download",
-            icon=":material/download"
+            icon=":material/download:"
         )
         if gen_down_btn:
             st.session_state[f'gen_down_btn_{name}'] = True
@@ -86,9 +86,10 @@ def show_delete_confirmation(name: str):
 @st.fragment
 def wpp_button(name: str):
     if st.button(
-        label="🟩",
+        label="",
         key=f"wpp_{name}",
-        help="Disparar para o WhatsApp"
+        help="Disparar para o WhatsApp",
+        icon=":material/whatsapp:"
     ):
         df = worksheets.worksheet_to_df(name)
         st.session_state.show_wpp_view = True
