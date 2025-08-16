@@ -174,6 +174,7 @@ def render_whatsapp_fragment():
                                 # result = assertiva.get_best_whatsapp_phone(valor_column)
                                 # phone_e164 = result["e164"] if result else None
                                 phone_e164 = f"funcionou {i}"
+                                1/0
                                 time.sleep(10)
                             except Exception as e:
                                 with st.container(key=f"getting_assertiva_phones_{i}_{str(valor_column)}", border=True):
