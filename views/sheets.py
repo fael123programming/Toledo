@@ -89,7 +89,7 @@ def wpp_button(name: str):
         label="",
         key=f"wpp_{name}",
         help="Disparar para o WhatsApp",
-        icon=":material/whatsapp:"
+        # icon=":material/whatsapp:"
     ):
         df = worksheets.worksheet_to_df(name)
         st.session_state.show_wpp_view = True
