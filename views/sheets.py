@@ -137,6 +137,7 @@ def render_whatsapp_fragment():
         st.session_state.df_name = None
         st.rerun(scope='app')
     if "df_wpp" in st.session_state and type(st.session_state['df_wpp']) is pd.DataFrame:
+        st.session_state['getting_phones_assertiva'] = False
         worksheet_tab, message_tab, lines_tab, time_tab, phone_tab, start_tab = st.tabs(['Planilha', 'Mensagem', 'Linhas', 'Intervalo', 'Telefone', 'Iniciar'])
         with worksheet_tab:
             with st.container(key='worksheet_container_key', border=True):
@@ -162,12 +163,34 @@ def render_whatsapp_fragment():
                         help="Buscar telefone mais recente usando Assertiva" if may_access else msg,
                         disabled=not may_access
                     )
+                    if search_assertiva:
+                        st.session_state['getting_phones_assertiva'] = True
+                        st.session_state['column_getting_phones_assertiva'] = col_name
+                        st.rerun(scope='fragment')
+                if st.session_state['getting_phones_assertiva']:
+                    with st.spinner("Consultando assertiva...", show_time=True):
+                        phones_list = []
+                        for i, valor_column in enumerate(st.session_state['df_wpp'][st.session_state['column_getting_phones_assertiva']].tolist()):
+                            try:
+                                result = assertiva.get_best_whatsapp_phone(valor_column)
+                                phone_e164 = result["e164"] if result else None
+                            except Exception as e:
+                                with st.container(key=f"getting_assertiva_phones_{i}_{str(valor_column)}", border=True):
+                                    st.write(f"Erro ao buscar telefone de \"{valor_column}\".")
+                                    st.error(e)
+                                    phones_list.append('')
+                            else:
+                                phones_list.append(phone_e164)
+                        st.session_state["df_wpp"][f"Telefone {st.session_state['column_getting_phones_assertiva']}"] = pd.Series(phones_list)
+                        st.session_state['getting_phones_assertiva'] = False
+                        st.rerun(scope='fragment')
                 df_edited = st.data_editor(
                     st.session_state['df_wpp'],
                     key=f"data_editor_{st.session_state['df_name']}",
                     use_container_width=True,
                     hide_index=True,
-                    num_rows="dynamic"
+                    num_rows="dynamic",
+                    disabled=st.session_state['getting_phones_assertiva']
                 )
                 if st.button(
                     "Salvar Alterações",
@@ -301,10 +324,6 @@ def render_whatsapp_fragment():
 
 
 def main():
-    try:
-        st.write(assertiva.get_best_whatsapp_phone("blabla"))
-    except Exception as e:
-        st.error(e)
     st.markdown("# 📊 Planilhas na Nuvem")
     st.subheader("🤝🏻 Armazene, acesse e gerencie suas planilhas de qualquer lugar — com segurança e praticidade.")
     if not auth_ok:
