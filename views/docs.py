@@ -8,6 +8,7 @@
 import os
 import re
 import json
+import time
 import tempfile
 from pathlib import Path
 from collections import Counter
@@ -237,91 +238,46 @@ def _get_mime_type(filename: str) -> str:
     return mime_types.get(ext, 'application/octet-stream')
 
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
-    """Upload de arquivos para a Files API do Gemini com tratamento de erros."""
+    """Upload de arquivos para a Files API do Gemini (google-genai >= 1.x)."""
     refs = []
     progress_bar = st.progress(0, text="Enviando arquivos para o Gemini...")
-    
-    try:
-        for i, uploaded_file in enumerate(uploaded_files):
-            try:
-                mime_type = _get_mime_type(uploaded_file.name)
-                st.info(f"Processando {uploaded_file.name} (MIME: {mime_type})")
-                
-                # Criar arquivo temporário
-                with tempfile.TemporaryDirectory() as temp_dir:
-                    temp_path = Path(temp_dir) / uploaded_file.name
-                    temp_path.write_bytes(uploaded_file.getvalue())
-                    
-                    # Método baseado na documentação oficial do google-genai
-                    try:
-                        # Usar apenas argumentos nomeados conforme documentação
-                        file_ref = client.files.upload(
-                            path=str(temp_path)
-                        )
-                        st.success(f"✅ Upload realizado com sucesso: {uploaded_file.name}")
-                        
-                    except Exception as e1:
-                        st.warning(f"Método 1 falhou: {e1}")
-                        
-                        # Método alternativo: usando o objeto pathlib.Path
-                        try:
-                            file_ref = client.files.upload(path=temp_path)
-                            st.success(f"✅ Upload realizado (método 2): {uploaded_file.name}")
-                            
-                        except Exception as e2:
-                            st.warning(f"Método 2 falhou: {e2}")
-                            
-                            # Método 3: forçar mime_type
-                            try:
-                                # Usar a API mais básica possível
-                                import google.genai as genai_alt
-                                genai_alt.configure(api_key=API_KEY)
-                                file_ref = genai_alt.upload_file(str(temp_path))
-                                st.success(f"✅ Upload realizado (método 3): {uploaded_file.name}")
-                                
-                            except Exception as e3:
-                                st.error(f"Método 3 também falhou: {e3}")
-                                
-                                # Última tentativa: importação alternativa
-                                try:
-                                    import google.generativeai as genai_old
-                                    genai_old.configure(api_key=API_KEY)
-                                    file_ref = genai_old.upload_file(str(temp_path))
-                                    st.success(f"✅ Upload realizado (método legacy): {uploaded_file.name}")
-                                    
-                                except Exception as e4:
-                                    st.error(f"Todos os métodos falharam para {uploaded_file.name}")
-                                    st.error(f"Erros: {e1}, {e2}, {e3}, {e4}")
-                                    
-                                    # Debug: mostrar a versão da biblioteca
-                                    try:
-                                        import google.genai
-                                        st.info(f"Versão google-genai: {google.genai.__version__}")
-                                    except:
-                                        st.info("Não foi possível determinar a versão da biblioteca")
-                                    
-                                    raise Exception(f"Falha em todos os métodos de upload para {uploaded_file.name}")
-                
-                refs.append(file_ref)
-                
-                progress_bar.progress(
-                    (i + 1) / len(uploaded_files), 
-                    text=f"✅ {uploaded_file.name} ({i+1}/{len(uploaded_files)})"
-                )
-                
-            except Exception as e:
-                st.error(f"Erro fatal ao enviar {uploaded_file.name}: {str(e)}")
-                progress_bar.empty()
-                raise
-        
-        progress_bar.empty()
-        st.success(f"🎉 {len(refs)} arquivo(s) enviado(s) com sucesso!")
-        return refs
-        
-    except Exception as e:
-        progress_bar.empty()
-        st.error(f"Erro durante upload: {str(e)}")
-        raise
+
+    for i, uploaded_file in enumerate(uploaded_files, start=1):
+        try:
+            # Salva o arquivo do Streamlit em disco temporário
+            with tempfile.TemporaryDirectory() as temp_dir:
+                temp_path = Path(temp_dir) / uploaded_file.name
+                temp_path.write_bytes(uploaded_file.getvalue())
+
+                # ✅ Upload correto na SDK nova: use 'file=' (NÃO existe 'path=')
+                file_ref = client.files.upload(file=str(temp_path))
+
+                # Opcional: aguardar processamento (útil p/ vídeo; PDFs quase sempre vêm prontos)
+                # Se existir .state e não estiver ACTIVE, faça um polling leve
+                state_name = getattr(getattr(file_ref, "state", None), "name", None)
+                if state_name and state_name != "ACTIVE":
+                    for _ in range(20):  # ~10s no total
+                        time.sleep(0.5)
+                        file_ref = client.files.get(name=file_ref.name)
+                        state_name = getattr(getattr(file_ref, "state", None), "name", None)
+                        if state_name == "ACTIVE":
+                            break
+
+            refs.append(file_ref)
+            progress_bar.progress(
+                i / len(uploaded_files),
+                text=f"✅ {uploaded_file.name} ({i}/{len(uploaded_files)})"
+            )
+
+        except Exception as e:
+            progress_bar.empty()
+            st.error(f"Erro ao enviar {uploaded_file.name}: {e}")
+            # Falha dura para manter coerência com seu fluxo atual
+            raise
+
+    progress_bar.empty()
+    st.success(f"🎉 {len(refs)} arquivo(s) enviado(s) com sucesso!")
+    return refs
 
 def _call_gemini(files_refs) -> dict:
     """
@@ -485,13 +441,13 @@ def _build_dashboard(payload: Dict[str, Any]):
                 }
             )
 
-            # Campos extraídos
-            if st.expander("🔍 Ver campos extraídos por arquivo"):
+            with st.expander("🔍 Ver campos extraídos por arquivo"):
                 for _, row in filtered_df.iterrows():
-                    key_fields = row.get("key_fields", {})
+                    key_fields = row.get("key_fields", {}) or {}
                     if key_fields:
                         st.subheader(row["arquivo"])
                         st.json(key_fields)
+
 
     # Tab: Documentos faltantes
     with tab_missing:
