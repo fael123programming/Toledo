@@ -16,7 +16,7 @@ from typing import Dict, Any, List, Optional
 import pandas as pd
 import streamlit as st
 from google import genai  # SDK oficial google-genai (Developer API)
-
+from google.genai import types
 # -----------------------------
 # Configuração inicial
 # -----------------------------
@@ -82,39 +82,28 @@ Regras:
 # Utilitários
 # -----------------------------
 def _resp_to_text(resp) -> str:
-    """
-    Tenta extrair o texto 'utilizável' da resposta do Gemini.
-    Cobre .output_text, .text e, se preciso, concatena candidates[].content.parts[].text.
-    Levanta erro claro se a saída foi bloqueada por safety/policy.
-    """
-    # caminhos "fáceis"
+    # tenta .output_text ou .text
     text = getattr(resp, "output_text", None) or getattr(resp, "text", None)
     if text:
         return text.strip()
 
-    # candidates → parts[].text
-    try:
-        chunks = []
-        for c in getattr(resp, "candidates", []) or []:
-            content = getattr(c, "content", None)
-            if not content:
-                continue
-            for p in getattr(content, "parts", []) or []:
-                t = getattr(p, "text", None)
-                if t:
-                    chunks.append(t)
-        if chunks:
-            return "\n".join(chunks).strip()
-    except Exception:
-        pass
+    # concatena candidates[].content.parts[].text
+    chunks = []
+    for c in getattr(resp, "candidates", []) or []:
+        content = getattr(c, "content", None)
+        if not content:
+            continue
+        for p in getattr(content, "parts", []) or []:
+            t = getattr(p, "text", None)
+            if t:
+                chunks.append(t)
+    if chunks:
+        return "\n".join(chunks).strip()
 
-    # saída bloqueada?
     pf = getattr(resp, "prompt_feedback", None)
     if pf:
         raise RuntimeError(f"Saída bloqueada pelo modelo (prompt_feedback): {pf}")
-
-    # nada encontrado
-    raise ValueError("Modelo não retornou texto para análise (resp vazio).")
+    raise ValueError("Modelo não retornou texto para análise.")
 
 # ——————————————————————————————————————————————————————————————
 # 2) Parser tolerante para JSON
@@ -153,44 +142,47 @@ def _extract_json(text: str):
 # ——————————————————————————————————————————————————————————————
 # 3) Chamada ao Gemini forçando JSON puro
 # ——————————————————————————————————————————————————————————————
+# REURB_SCHEMA: use os tipos do SDK (STRING, NUMBER, BOOLEAN, OBJECT, ARRAY)
 REURB_SCHEMA = {
-    "type": "object",
+    "type": "OBJECT",
+    "required": ["files", "missing_documents"],
     "properties": {
         "files": {
-            "type": "array",
+            "type": "ARRAY",
             "items": {
-                "type": "object",
-                "properties": {
-                    "file_name": {"type": "string"},
-                    "detected_type": {"type": "string"},
-                    "confidence": {"type": "number"},
-                    "relevant_for_reurb": {"type": "boolean"},
-                    "key_fields": {"type": "object"},
-                    "notes": {"type": "string"},
-                },
+                "type": "OBJECT",
                 "required": [
                     "file_name", "detected_type", "confidence",
                     "relevant_for_reurb", "key_fields", "notes"
                 ],
+                "properties": {
+                    "file_name": {"type": "STRING"},
+                    "detected_type": {"type": "STRING"},
+                    "confidence": {"type": "NUMBER"},
+                    "relevant_for_reurb": {"type": "BOOLEAN"},
+                    "key_fields": {"type": "OBJECT"},
+                    "notes": {"type": "STRING"},
+                },
             },
         },
-        "likely_modality": {"type": ["string", "null"]},
+        # não há "nullable" no schema; trate null na aplicação
+        "likely_modality": {"type": "STRING"},
         "missing_documents": {
-            "type": "array",
+            "type": "ARRAY",
             "items": {
-                "type": "object",
-                "properties": {
-                    "name": {"type": "string"},
-                    "why_needed": {"type": "string"},
-                    "legal_basis": {"type": ["string", "null"]},
-                    "priority": {"type": "string"},
-                },
+                "type": "OBJECT",
                 "required": ["name", "why_needed", "priority"],
+                "properties": {
+                    "name": {"type": "STRING"},
+                    "why_needed": {"type": "STRING"},
+                    "legal_basis": {"type": "STRING"},
+                    "priority": {"type": "STRING"},
+                },
             },
         },
     },
-    "required": ["files", "missing_documents"],
 }
+
 
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
     """Faz upload de cada arquivo (PDF/DOCX) para a Files API e retorna os handles."""
@@ -208,31 +200,26 @@ def _upload_files_to_gemini(uploaded_files) -> List[Any]:
 
 def _call_gemini(files_refs) -> dict:
     """
-    Chama o modelo pedindo JSON estrito (response_mime_type='application/json')
-    e valida pelo schema (quando suportado).
+    Chama o modelo com Files API + system_instruction via config,
+    e força retorno em JSON usando response_schema.
     """
-    # Passa o prompt como system_instruction e os arquivos no contents
-    # (isso ajuda a reduzir "texto extra" fora do JSON).
+    # Dica: inclua um prompt curto no contents (além do system_instruction) para “ancorar” a intenção do usuário
+    user_prompt = "Analise os arquivos conforme as instruções do sistema e retorne SOMENTE o JSON solicitado."
+
     resp = client.models.generate_content(
-        model=GEMINI_MODEL,
-        contents=files_refs,  # só os arquivos aqui
-        system_instruction=SYSTEM_PROMPT,  # prompt vai como "sistema"
-        config={
-            "response_mime_type": "application/json",
-            "response_schema": REURB_SCHEMA,   # o SDK aplica structured output quando disponível
-        },
+        model=GEMINI_MODEL,  # ex.: "gemini-2.0-flash" / "gemini-2.5-flash"
+        contents=[user_prompt, *files_refs],  # texto + arquivos (padrão do SDK)
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,                 # << aqui é o lugar certo
+            response_mime_type="application/json",           # força JSON puro
+            response_schema=REURB_SCHEMA,                    # estrutura esperada
+            temperature=0,                                   # (opcional) deixar mais determinístico
+            max_output_tokens=2048,                          # (opcional) se a saída for longa
+        ),
     )
 
-    text = _resp_to_text(resp)
-    try:
-        return _extract_json(text)
-    except Exception:
-        # Debug amigável: mostra uma amostra do que veio
-        snippet = (text[:1200] + "…") if len(text) > 1200 else text
-        raise RuntimeError(
-            "Falha ao interpretar JSON retornado. Amostra da resposta do modelo:\n\n"
-            + snippet
-        )
+    text = _resp_to_text(resp)      # seu helper de extração continua valendo
+    return _extract_json(text) 
 
 def _build_dashboard(payload: Dict[str, Any]):
     """Monta o dashboard completo a partir do JSON."""
