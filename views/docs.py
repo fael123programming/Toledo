@@ -183,7 +183,23 @@ REURB_SCHEMA = types.Schema(
                     "detected_type": types.Schema(type=types.Type.STRING),
                     "confidence": types.Schema(type=types.Type.NUMBER),
                     "relevant_for_reurb": types.Schema(type=types.Type.BOOLEAN),
-                    "key_fields": types.Schema(type=types.Type.OBJECT),
+                    "key_fields": types.Schema(
+                        type=types.Type.OBJECT,
+                        properties={
+                            "nome": types.Schema(type=types.Type.STRING),
+                            "cpf": types.Schema(type=types.Type.STRING),
+                            "cnpj": types.Schema(type=types.Type.STRING),
+                            "endereco": types.Schema(type=types.Type.STRING),
+                            "matricula": types.Schema(type=types.Type.STRING),
+                            "cartorio": types.Schema(type=types.Type.STRING),
+                            "data": types.Schema(type=types.Type.STRING),
+                            "numero_processo": types.Schema(type=types.Type.STRING),
+                            "municipio": types.Schema(type=types.Type.STRING),
+                            "area": types.Schema(type=types.Type.STRING),
+                            "valor": types.Schema(type=types.Type.STRING),
+                        },
+                        additionalProperties=True
+                    ),
                     "notes": types.Schema(type=types.Type.STRING),
                 },
             ),
@@ -205,20 +221,50 @@ REURB_SCHEMA = types.Schema(
     },
 )
 
+def _test_upload_method():
+    """Testa qual método de upload funciona com a versão atual da API."""
+    import inspect
+    try:
+        # Verifica a assinatura do método upload
+        upload_sig = inspect.signature(client.files.upload)
+        params = list(upload_sig.parameters.keys())
+        return params
+    except:
+        return ["unknown"]
+
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
     """Upload de arquivos para a Files API do Gemini com tratamento de erros."""
     refs = []
     progress_bar = st.progress(0, text="Enviando arquivos para o Gemini...")
     
+    # Verificar quais parâmetros a API aceita
+    upload_params = _test_upload_method()
+    st.info(f"Parâmetros da API upload detectados: {upload_params}")
+    
     try:
         for i, uploaded_file in enumerate(uploaded_files):
-            with tempfile.NamedTemporaryFile(delete=False, suffix=Path(uploaded_file.name).suffix) as tmp_file:
-                tmp_file.write(uploaded_file.getvalue())
-                tmp_path = tmp_file.name
-            
             try:
-                # Upload usando o caminho temporário
-                file_ref = client.files.upload(file=tmp_path)
+                # Método 1: Tentar com BytesIO (mais direto)
+                import io
+                file_obj = io.BytesIO(uploaded_file.getvalue())
+                file_obj.name = uploaded_file.name
+                
+                # Tentar diferentes assinaturas da API
+                if 'file' in upload_params:
+                    file_ref = client.files.upload(file=file_obj)
+                elif any(p in upload_params for p in ['path', 'file_path']):
+                    # Se só aceita path, usar arquivo temporário
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        temp_path = Path(temp_dir) / uploaded_file.name
+                        temp_path.write_bytes(uploaded_file.getvalue())
+                        if 'path' in upload_params:
+                            file_ref = client.files.upload(path=str(temp_path))
+                        else:
+                            file_ref = client.files.upload(file_path=str(temp_path))
+                else:
+                    # Tentativa com apenas o objeto arquivo
+                    file_ref = client.files.upload(file_obj)
+                
                 refs.append(file_ref)
                 
                 progress_bar.progress(
@@ -228,15 +274,30 @@ def _upload_files_to_gemini(uploaded_files) -> List[Any]:
                 
             except Exception as e:
                 st.error(f"Erro ao enviar arquivo {uploaded_file.name}: {str(e)}")
-                raise
-            finally:
-                # Limpeza do arquivo temporário
+                st.error(f"Detalhes do erro: {type(e).__name__}")
+                
+                # Última tentativa: método mais básico
                 try:
-                    os.unlink(tmp_path)
-                except:
-                    pass
+                    with tempfile.TemporaryDirectory() as temp_dir:
+                        temp_path = Path(temp_dir) / uploaded_file.name
+                        temp_path.write_bytes(uploaded_file.getvalue())
+                        
+                        # Tentar chamada mais simples
+                        file_ref = client.files.upload(temp_path)
+                        refs.append(file_ref)
+                        
+                        progress_bar.progress(
+                            (i + 1) / len(uploaded_files), 
+                            text=f"Enviado (alt): {uploaded_file.name} ({i+1}/{len(uploaded_files)})"
+                        )
+                        
+                except Exception as e2:
+                    st.error(f"Todas as tentativas falharam para {uploaded_file.name}")
+                    st.error(f"Erro final: {str(e2)}")
+                    raise e2
         
         progress_bar.empty()
+        st.success(f"✅ {len(refs)} arquivo(s) enviado(s) com sucesso")
         return refs
         
     except Exception as e:
@@ -251,6 +312,7 @@ def _call_gemini(files_refs) -> dict:
     user_prompt = "Analise os documentos enviados conforme as instruções do sistema e retorne apenas o JSON estruturado solicitado."
     
     try:
+        # Primeira tentativa: com schema completo
         response = client.models.generate_content(
             model=GEMINI_MODEL,
             contents=[user_prompt] + files_refs,
@@ -267,8 +329,45 @@ def _call_gemini(files_refs) -> dict:
         return _extract_json(text)
         
     except Exception as e:
-        st.error(f"Erro na chamada ao Gemini: {str(e)}")
-        raise
+        st.warning(f"Schema restritivo falhou: {str(e)}. Tentando sem schema...")
+        
+        # Segunda tentativa: apenas JSON sem schema
+        try:
+            response = client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=[user_prompt] + files_refs,
+                config=types.GenerateContentConfig(
+                    system_instruction=SYSTEM_PROMPT,
+                    response_mime_type="application/json",
+                    temperature=0.1,
+                    max_output_tokens=4096,
+                ),
+            )
+            
+            text = _resp_to_text(response)
+            return _extract_json(text)
+            
+        except Exception as e2:
+            st.warning(f"JSON sem schema falhou: {str(e2)}. Tentando texto livre...")
+            
+            # Terceira tentativa: texto livre
+            try:
+                response = client.models.generate_content(
+                    model=GEMINI_MODEL,
+                    contents=[user_prompt] + files_refs,
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_PROMPT,
+                        temperature=0.1,
+                        max_output_tokens=4096,
+                    ),
+                )
+                
+                text = _resp_to_text(response)
+                return _extract_json(text)
+                
+            except Exception as e3:
+                st.error(f"Todas as tentativas falharam. Último erro: {str(e3)}")
+                raise e3
 
 def _build_dashboard(payload: Dict[str, Any]):
     """Constrói o dashboard de análise."""
