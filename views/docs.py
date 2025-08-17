@@ -81,17 +81,116 @@ Regras:
 # -----------------------------
 # Utilitários
 # -----------------------------
-def _extract_json(text: str) -> Dict[str, Any]:
-    """Tenta extrair JSON de uma resposta de modelo (com ou sem cercas ```json)."""
-    if not text:
-        raise ValueError("Resposta vazia do modelo.")
-    m = re.search(r"```json(.*?)```", text, flags=re.S)
+def _resp_to_text(resp) -> str:
+    """
+    Tenta extrair o texto 'utilizável' da resposta do Gemini.
+    Cobre .output_text, .text e, se preciso, concatena candidates[].content.parts[].text.
+    Levanta erro claro se a saída foi bloqueada por safety/policy.
+    """
+    # caminhos "fáceis"
+    text = getattr(resp, "output_text", None) or getattr(resp, "text", None)
+    if text:
+        return text.strip()
+
+    # candidates → parts[].text
+    try:
+        chunks = []
+        for c in getattr(resp, "candidates", []) or []:
+            content = getattr(c, "content", None)
+            if not content:
+                continue
+            for p in getattr(content, "parts", []) or []:
+                t = getattr(p, "text", None)
+                if t:
+                    chunks.append(t)
+        if chunks:
+            return "\n".join(chunks).strip()
+    except Exception:
+        pass
+
+    # saída bloqueada?
+    pf = getattr(resp, "prompt_feedback", None)
+    if pf:
+        raise RuntimeError(f"Saída bloqueada pelo modelo (prompt_feedback): {pf}")
+
+    # nada encontrado
+    raise ValueError("Modelo não retornou texto para análise (resp vazio).")
+
+# ——————————————————————————————————————————————————————————————
+# 2) Parser tolerante para JSON
+# ——————————————————————————————————————————————————————————————
+def _extract_json(text: str):
+    """
+    Aceita:
+      - JSON puro
+      - bloco entre ```json ... ```
+      - pega o primeiro { ... } até o último } (heurística)
+    Lança erro detalhado em caso de falha.
+    """
+    if not text or not text.strip():
+        raise ValueError("Resposta vazia do modelo (string em branco).")
+
+    s = text.strip()
+
+    # cercas ```json
+    m = re.search(r"```json\s*(.*?)\s*```", s, flags=re.S | re.I)
     if m:
         return json.loads(m.group(1))
-    m2 = re.search(r"\{.*\}\s*\Z", text, flags=re.S)
-    if m2:
-        return json.loads(m2.group(0))
-    return json.loads(text)
+
+    # captura do primeiro bloco JSON "nu"
+    start = s.find("{")
+    end = s.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = s[start:end+1]
+        try:
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass  # tenta por último o loads direto
+
+    # tentativa direta
+    return json.loads(s)
+
+# ——————————————————————————————————————————————————————————————
+# 3) Chamada ao Gemini forçando JSON puro
+# ——————————————————————————————————————————————————————————————
+REURB_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "files": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "file_name": {"type": "string"},
+                    "detected_type": {"type": "string"},
+                    "confidence": {"type": "number"},
+                    "relevant_for_reurb": {"type": "boolean"},
+                    "key_fields": {"type": "object"},
+                    "notes": {"type": "string"},
+                },
+                "required": [
+                    "file_name", "detected_type", "confidence",
+                    "relevant_for_reurb", "key_fields", "notes"
+                ],
+            },
+        },
+        "likely_modality": {"type": ["string", "null"]},
+        "missing_documents": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {"type": "string"},
+                    "why_needed": {"type": "string"},
+                    "legal_basis": {"type": ["string", "null"]},
+                    "priority": {"type": "string"},
+                },
+                "required": ["name", "why_needed", "priority"],
+            },
+        },
+    },
+    "required": ["files", "missing_documents"],
+}
 
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
     """Faz upload de cada arquivo (PDF/DOCX) para a Files API e retorna os handles."""
@@ -107,21 +206,33 @@ def _upload_files_to_gemini(uploaded_files) -> List[Any]:
     pb.empty()
     return refs
 
-def _call_gemini(files_refs: List[Any]) -> Dict[str, Any]:
-    """Chama o modelo com os arquivos + prompt e retorna o JSON parseado."""
-    # A documentação da Files API mostra o padrão contents=[arquivo, "\n\n", "pergunta"].
-    # Vamos seguir essa ordem para maior aderência. :contentReference[oaicite:1]{index=1}
-    contents = []
-    contents.extend(files_refs)
-    contents.append("\n\n")
-    contents.append(SYSTEM_PROMPT)
-
+def _call_gemini(files_refs) -> dict:
+    """
+    Chama o modelo pedindo JSON estrito (response_mime_type='application/json')
+    e valida pelo schema (quando suportado).
+    """
+    # Passa o prompt como system_instruction e os arquivos no contents
+    # (isso ajuda a reduzir "texto extra" fora do JSON).
     resp = client.models.generate_content(
         model=GEMINI_MODEL,
-        contents=contents,
+        contents=files_refs,  # só os arquivos aqui
+        system_instruction=SYSTEM_PROMPT,  # prompt vai como "sistema"
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": REURB_SCHEMA,   # o SDK aplica structured output quando disponível
+        },
     )
-    text = getattr(resp, "text", "") or getattr(resp, "output_text", "")
-    return _extract_json(text)
+
+    text = _resp_to_text(resp)
+    try:
+        return _extract_json(text)
+    except Exception:
+        # Debug amigável: mostra uma amostra do que veio
+        snippet = (text[:1200] + "…") if len(text) > 1200 else text
+        raise RuntimeError(
+            "Falha ao interpretar JSON retornado. Amostra da resposta do modelo:\n\n"
+            + snippet
+        )
 
 def _build_dashboard(payload: Dict[str, Any]):
     """Monta o dashboard completo a partir do JSON."""
