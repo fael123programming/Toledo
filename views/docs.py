@@ -221,83 +221,101 @@ REURB_SCHEMA = types.Schema(
     },
 )
 
-def _test_upload_method():
-    """Testa qual método de upload funciona com a versão atual da API."""
-    import inspect
-    try:
-        # Verifica a assinatura do método upload
-        upload_sig = inspect.signature(client.files.upload)
-        params = list(upload_sig.parameters.keys())
-        return params
-    except:
-        return ["unknown"]
+def _get_mime_type(filename: str) -> str:
+    """Determina o MIME type baseado na extensão do arquivo."""
+    ext = Path(filename).suffix.lower()
+    mime_types = {
+        '.pdf': 'application/pdf',
+        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        '.doc': 'application/msword',
+        '.txt': 'text/plain',
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.gif': 'image/gif',
+    }
+    return mime_types.get(ext, 'application/octet-stream')
 
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
     """Upload de arquivos para a Files API do Gemini com tratamento de erros."""
     refs = []
     progress_bar = st.progress(0, text="Enviando arquivos para o Gemini...")
     
-    # Verificar quais parâmetros a API aceita
-    upload_params = _test_upload_method()
-    st.info(f"Parâmetros da API upload detectados: {upload_params}")
-    
     try:
         for i, uploaded_file in enumerate(uploaded_files):
             try:
-                # Método 1: Tentar com BytesIO (mais direto)
-                import io
-                file_obj = io.BytesIO(uploaded_file.getvalue())
-                file_obj.name = uploaded_file.name
+                mime_type = _get_mime_type(uploaded_file.name)
+                st.info(f"Processando {uploaded_file.name} (MIME: {mime_type})")
                 
-                # Tentar diferentes assinaturas da API
-                if 'file' in upload_params:
-                    file_ref = client.files.upload(file=file_obj)
-                elif any(p in upload_params for p in ['path', 'file_path']):
-                    # Se só aceita path, usar arquivo temporário
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        temp_path = Path(temp_dir) / uploaded_file.name
-                        temp_path.write_bytes(uploaded_file.getvalue())
-                        if 'path' in upload_params:
-                            file_ref = client.files.upload(path=str(temp_path))
-                        else:
-                            file_ref = client.files.upload(file_path=str(temp_path))
-                else:
-                    # Tentativa com apenas o objeto arquivo
-                    file_ref = client.files.upload(file_obj)
+                # Criar arquivo temporário
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    temp_path = Path(temp_dir) / uploaded_file.name
+                    temp_path.write_bytes(uploaded_file.getvalue())
+                    
+                    # Método baseado na documentação oficial do google-genai
+                    try:
+                        # Usar apenas argumentos nomeados conforme documentação
+                        file_ref = client.files.upload(
+                            path=str(temp_path)
+                        )
+                        st.success(f"✅ Upload realizado com sucesso: {uploaded_file.name}")
+                        
+                    except Exception as e1:
+                        st.warning(f"Método 1 falhou: {e1}")
+                        
+                        # Método alternativo: usando o objeto pathlib.Path
+                        try:
+                            file_ref = client.files.upload(path=temp_path)
+                            st.success(f"✅ Upload realizado (método 2): {uploaded_file.name}")
+                            
+                        except Exception as e2:
+                            st.warning(f"Método 2 falhou: {e2}")
+                            
+                            # Método 3: forçar mime_type
+                            try:
+                                # Usar a API mais básica possível
+                                import google.genai as genai_alt
+                                genai_alt.configure(api_key=API_KEY)
+                                file_ref = genai_alt.upload_file(str(temp_path))
+                                st.success(f"✅ Upload realizado (método 3): {uploaded_file.name}")
+                                
+                            except Exception as e3:
+                                st.error(f"Método 3 também falhou: {e3}")
+                                
+                                # Última tentativa: importação alternativa
+                                try:
+                                    import google.generativeai as genai_old
+                                    genai_old.configure(api_key=API_KEY)
+                                    file_ref = genai_old.upload_file(str(temp_path))
+                                    st.success(f"✅ Upload realizado (método legacy): {uploaded_file.name}")
+                                    
+                                except Exception as e4:
+                                    st.error(f"Todos os métodos falharam para {uploaded_file.name}")
+                                    st.error(f"Erros: {e1}, {e2}, {e3}, {e4}")
+                                    
+                                    # Debug: mostrar a versão da biblioteca
+                                    try:
+                                        import google.genai
+                                        st.info(f"Versão google-genai: {google.genai.__version__}")
+                                    except:
+                                        st.info("Não foi possível determinar a versão da biblioteca")
+                                    
+                                    raise Exception(f"Falha em todos os métodos de upload para {uploaded_file.name}")
                 
                 refs.append(file_ref)
                 
                 progress_bar.progress(
                     (i + 1) / len(uploaded_files), 
-                    text=f"Enviado: {uploaded_file.name} ({i+1}/{len(uploaded_files)})"
+                    text=f"✅ {uploaded_file.name} ({i+1}/{len(uploaded_files)})"
                 )
                 
             except Exception as e:
-                st.error(f"Erro ao enviar arquivo {uploaded_file.name}: {str(e)}")
-                st.error(f"Detalhes do erro: {type(e).__name__}")
-                
-                # Última tentativa: método mais básico
-                try:
-                    with tempfile.TemporaryDirectory() as temp_dir:
-                        temp_path = Path(temp_dir) / uploaded_file.name
-                        temp_path.write_bytes(uploaded_file.getvalue())
-                        
-                        # Tentar chamada mais simples
-                        file_ref = client.files.upload(temp_path)
-                        refs.append(file_ref)
-                        
-                        progress_bar.progress(
-                            (i + 1) / len(uploaded_files), 
-                            text=f"Enviado (alt): {uploaded_file.name} ({i+1}/{len(uploaded_files)})"
-                        )
-                        
-                except Exception as e2:
-                    st.error(f"Todas as tentativas falharam para {uploaded_file.name}")
-                    st.error(f"Erro final: {str(e2)}")
-                    raise e2
+                st.error(f"Erro fatal ao enviar {uploaded_file.name}: {str(e)}")
+                progress_bar.empty()
+                raise
         
         progress_bar.empty()
-        st.success(f"✅ {len(refs)} arquivo(s) enviado(s) com sucesso")
+        st.success(f"🎉 {len(refs)} arquivo(s) enviado(s) com sucesso!")
         return refs
         
     except Exception as e:
