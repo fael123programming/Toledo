@@ -23,7 +23,7 @@ from google import genai  # SDK oficial google-genai (Developer API)
 st.set_page_config(page_title="REURB — Analisador Gemini", page_icon="🏗️", layout="wide")
 st.title("🏗️ REURB — Analisador de Documentos com Gemini")
 
-API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY")
+API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets["google_gemini"]["GEMINI_API_KEY"]
 if not API_KEY:
     st.error("Defina GEMINI_API_KEY no ambiente ou em st.secrets para continuar.")
     st.stop()
