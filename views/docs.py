@@ -8,7 +8,6 @@
 import os
 import re
 import json
-import time
 import tempfile
 from pathlib import Path
 from collections import Counter
@@ -16,36 +15,21 @@ from typing import Dict, Any, List, Optional
 
 import pandas as pd
 import streamlit as st
-from google import genai
+from google import genai  # SDK oficial google-genai (Developer API)
 from google.genai import types
-
 # -----------------------------
 # Configuração inicial
 # -----------------------------
 st.set_page_config(page_title="REURB — Analisador Gemini", page_icon="🏗️", layout="wide")
 st.title("🏗️ REURB — Analisador de Documentos com Gemini")
 
-# Configuração da API key com tratamento de erro melhorado
-try:
-    API_KEY = os.getenv("GEMINI_API_KEY")
-    if not API_KEY and "google_gemini" in st.secrets:
-        API_KEY = st.secrets["google_gemini"]["GEMINI_API_KEY"]
-    
-    if not API_KEY:
-        st.error("⚠️ Defina GEMINI_API_KEY no ambiente ou em st.secrets para continuar.")
-        st.info("Para obter uma API key, acesse: https://makersuite.google.com/app/apikey")
-        st.stop()
-except Exception as e:
-    st.error(f"Erro ao configurar API key: {str(e)}")
+API_KEY = os.getenv("GEMINI_API_KEY") or st.secrets["google_gemini"]["GEMINI_API_KEY"]
+if not API_KEY:
+    st.error("Defina GEMINI_API_KEY no ambiente ou em st.secrets para continuar.")
     st.stop()
 
-# Inicializar cliente Gemini
-try:
-    client = genai.Client(api_key=API_KEY)
-    GEMINI_MODEL = "gemini-2.0-flash-exp"  # Modelo mais atualizado
-except Exception as e:
-    st.error(f"Erro ao inicializar cliente Gemini: {str(e)}")
-    st.stop()
+client = genai.Client(api_key=API_KEY)
+GEMINI_MODEL = "gemini-2.0-flash"  # rápido e multimodal
 
 # -----------------------------
 # Prompt do modelo (jurídico)
@@ -65,545 +49,384 @@ Tarefas:
    - prioridade (alta/média/baixa),
    - por que é necessário,
    - base legal sucinta (art./§ da Lei 13.465/2017 ou Decreto 9.310/2018, quando aplicável).
-
-Responda ESTRITAMENTE em JSON válido seguindo este schema:
+5) Responda **estritamente** em JSON neste schema:
 
 {
   "files": [
     {
       "file_name": "string",
-      "detected_type": "string", 
+      "detected_type": "string",
       "confidence": 0.0,
       "relevant_for_reurb": true,
       "key_fields": {},
       "notes": "string"
     }
   ],
-  "likely_modality": "REURB-S" ou "REURB-E" ou null,
+  "likely_modality": "REURB-S" | "REURB-E" | null,
   "missing_documents": [
     {
       "name": "string",
-      "why_needed": "string", 
-      "legal_basis": "string ou null",
-      "priority": "alta" ou "média" ou "baixa"
+      "why_needed": "string",
+      "legal_basis": "string|null",
+      "priority": "alta" | "média" | "baixa"
     }
   ]
 }
 
-Regras importantes:
-- Se algo não puder ser determinado, use null ou explique em "notes"
-- Não escreva nada além do JSON válido
-- Use apenas os valores exatos especificados para enums (REURB-S, REURB-E, alta, média, baixa)
+Regras:
+- Se algo não puder ser afirmado, use null ou explique em "notes".
+- Não escreva nada fora do JSON.
 """
 
 # -----------------------------
 # Utilitários
 # -----------------------------
 def _resp_to_text(resp) -> str:
-    """Extrai texto da resposta do Gemini com múltiplas tentativas."""
-    # Primeira tentativa: atributos diretos
-    text = getattr(resp, "text", None)
+    # tenta .output_text ou .text
+    text = getattr(resp, "output_text", None) or getattr(resp, "text", None)
     if text:
         return text.strip()
-    
-    # Segunda tentativa: candidates
-    if hasattr(resp, "candidates") and resp.candidates:
-        for candidate in resp.candidates:
-            if hasattr(candidate, "content") and candidate.content:
-                parts = getattr(candidate.content, "parts", [])
-                text_parts = []
-                for part in parts:
-                    if hasattr(part, "text") and part.text:
-                        text_parts.append(part.text)
-                if text_parts:
-                    return "\n".join(text_parts).strip()
-    
-    # Verificar bloqueios
-    if hasattr(resp, "prompt_feedback"):
-        pf = resp.prompt_feedback
-        if hasattr(pf, "block_reason") and pf.block_reason:
-            raise RuntimeError(f"Conteúdo bloqueado pelo modelo: {pf.block_reason}")
-    
-    raise ValueError("Modelo não retornou texto válido para análise.")
 
-def _extract_json(text: str) -> dict:
+    # concatena candidates[].content.parts[].text
+    chunks = []
+    for c in getattr(resp, "candidates", []) or []:
+        content = getattr(c, "content", None)
+        if not content:
+            continue
+        for p in getattr(content, "parts", []) or []:
+            t = getattr(p, "text", None)
+            if t:
+                chunks.append(t)
+    if chunks:
+        return "\n".join(chunks).strip()
+
+    pf = getattr(resp, "prompt_feedback", None)
+    if pf:
+        raise RuntimeError(f"Saída bloqueada pelo modelo (prompt_feedback): {pf}")
+    raise ValueError("Modelo não retornou texto para análise.")
+
+# ——————————————————————————————————————————————————————————————
+# 2) Parser tolerante para JSON
+# ——————————————————————————————————————————————————————————————
+def _extract_json(text: str):
     """
-    Parser tolerante para JSON com múltiplas estratégias.
+    Aceita:
+      - JSON puro
+      - bloco entre ```json ... ```
+      - pega o primeiro { ... } até o último } (heurística)
+    Lança erro detalhado em caso de falha.
     """
     if not text or not text.strip():
-        raise ValueError("Resposta vazia do modelo.")
+        raise ValueError("Resposta vazia do modelo (string em branco).")
 
-    text = text.strip()
-    
-    # Estratégia 1: Bloco de código JSON
-    json_match = re.search(r"```json\s*(.*?)\s*```", text, flags=re.DOTALL | re.IGNORECASE)
-    if json_match:
+    s = text.strip()
+
+    # cercas ```json
+    m = re.search(r"```json\s*(.*?)\s*```", s, flags=re.S | re.I)
+    if m:
+        return json.loads(m.group(1))
+
+    # captura do primeiro bloco JSON "nu"
+    start = s.find("{")
+    end = s.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = s[start:end+1]
         try:
-            return json.loads(json_match.group(1).strip())
-        except json.JSONDecodeError as e:
-            st.warning(f"Erro ao parsear JSON do bloco de código: {e}")
-    
-    # Estratégia 2: Buscar primeiro objeto JSON completo
-    brace_count = 0
-    start_idx = -1
-    
-    for i, char in enumerate(text):
-        if char == '{':
-            if start_idx == -1:
-                start_idx = i
-            brace_count += 1
-        elif char == '}':
-            brace_count -= 1
-            if brace_count == 0 and start_idx != -1:
-                try:
-                    return json.loads(text[start_idx:i+1])
-                except json.JSONDecodeError:
-                    continue
-    
-    # Estratégia 3: Tentativa direta
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError as e:
-        raise ValueError(f"Não foi possível extrair JSON válido da resposta. Erro: {e}\n\nTexto recebido: {text[:500]}...")
+            return json.loads(candidate)
+        except json.JSONDecodeError:
+            pass  # tenta por último o loads direto
 
-# Schema corrigido para o Gemini
-REURB_SCHEMA = types.Schema(
-    type=types.Type.OBJECT,
-    required=["files", "missing_documents"],
-    properties={
-        "files": types.Schema(
-            type=types.Type.ARRAY,
-            items=types.Schema(
-                type=types.Type.OBJECT,
-                required=[
-                    "file_name", "detected_type", "confidence",
-                    "relevant_for_reurb", "key_fields", "notes"
-                ],
-                properties={
-                    "file_name": types.Schema(type=types.Type.STRING),
-                    "detected_type": types.Schema(type=types.Type.STRING),
-                    "confidence": types.Schema(type=types.Type.NUMBER),
-                    "relevant_for_reurb": types.Schema(type=types.Type.BOOLEAN),
-                    "key_fields": types.Schema(
-                        type=types.Type.OBJECT,
-                        properties={
-                            "nome": types.Schema(type=types.Type.STRING),
-                            "cpf": types.Schema(type=types.Type.STRING),
-                            "cnpj": types.Schema(type=types.Type.STRING),
-                            "endereco": types.Schema(type=types.Type.STRING),
-                            "matricula": types.Schema(type=types.Type.STRING),
-                            "cartorio": types.Schema(type=types.Type.STRING),
-                            "data": types.Schema(type=types.Type.STRING),
-                            "numero_processo": types.Schema(type=types.Type.STRING),
-                            "municipio": types.Schema(type=types.Type.STRING),
-                            "area": types.Schema(type=types.Type.STRING),
-                            "valor": types.Schema(type=types.Type.STRING),
-                        },
-                        additionalProperties=True
-                    ),
-                    "notes": types.Schema(type=types.Type.STRING),
-                },
-            ),
-        ),
-        "likely_modality": types.Schema(type=types.Type.STRING),
-        "missing_documents": types.Schema(
-            type=types.Type.ARRAY,
-            items=types.Schema(
-                type=types.Type.OBJECT,
-                required=["name", "why_needed", "priority"],
-                properties={
-                    "name": types.Schema(type=types.Type.STRING),
-                    "why_needed": types.Schema(type=types.Type.STRING),
-                    "legal_basis": types.Schema(type=types.Type.STRING),
-                    "priority": types.Schema(type=types.Type.STRING),
-                },
-            ),
-        ),
+    # tentativa direta
+    return json.loads(s)
+
+# ——————————————————————————————————————————————————————————————
+# 3) Chamada ao Gemini forçando JSON puro
+# ——————————————————————————————————————————————————————————————
+REURB_SCHEMA = {
+  "type": "OBJECT",
+  "required": ["files", "missing_documents"],
+  "properties": {
+    "files": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "required": ["file_name","detected_type","confidence","relevant_for_reurb","key_fields","notes"],
+        "properties": {
+          "file_name": {"type": "STRING"},
+          "detected_type": {"type": "STRING"},
+          "confidence": {"type": "NUMBER"},
+          "relevant_for_reurb": {"type": "BOOLEAN"},
+          # 👇 em vez de OBJECT vazio, declare um dict homogêneo:
+          "key_fields": { "type": "OBJECT", "properties": {
+              # defina AO MENOS UMA propriedade genérica OU troque para um map por typing (melhor com Pydantic)
+              # Exemplo minimalista (se não quiser Pydantic):
+              "_": {"type": "STRING"}
+          }},
+          "notes": {"type": "STRING"},
+        }
+      }
     },
-)
-
-def _get_mime_type(filename: str) -> str:
-    """Determina o MIME type baseado na extensão do arquivo."""
-    ext = Path(filename).suffix.lower()
-    mime_types = {
-        '.pdf': 'application/pdf',
-        '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        '.doc': 'application/msword',
-        '.txt': 'text/plain',
-        '.jpg': 'image/jpeg',
-        '.jpeg': 'image/jpeg',
-        '.png': 'image/png',
-        '.gif': 'image/gif',
+    "likely_modality": {"type": "STRING"},  # trate null na aplicação
+    "missing_documents": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "required": ["name","why_needed","priority"],
+        "properties": {
+          "name": {"type": "STRING"},
+          "why_needed": {"type": "STRING"},
+          "legal_basis": {"type": "STRING"},
+          "priority": {"type": "STRING"}
+        }
+      }
     }
-    return mime_types.get(ext, 'application/octet-stream')
+  }
+}
+
 
 def _upload_files_to_gemini(uploaded_files) -> List[Any]:
-    """Upload de arquivos para a Files API do Gemini (google-genai >= 1.x)."""
+    """Faz upload de cada arquivo (PDF/DOCX) para a Files API e retorna os handles."""
     refs = []
-    progress_bar = st.progress(0, text="Enviando arquivos para o Gemini...")
-
-    for i, uploaded_file in enumerate(uploaded_files, start=1):
-        try:
-            # Salva o arquivo do Streamlit em disco temporário
-            with tempfile.TemporaryDirectory() as temp_dir:
-                temp_path = Path(temp_dir) / uploaded_file.name
-                temp_path.write_bytes(uploaded_file.getvalue())
-
-                # ✅ Upload correto na SDK nova: use 'file=' (NÃO existe 'path=')
-                file_ref = client.files.upload(file=str(temp_path))
-
-                # Opcional: aguardar processamento (útil p/ vídeo; PDFs quase sempre vêm prontos)
-                # Se existir .state e não estiver ACTIVE, faça um polling leve
-                state_name = getattr(getattr(file_ref, "state", None), "name", None)
-                if state_name and state_name != "ACTIVE":
-                    for _ in range(20):  # ~10s no total
-                        time.sleep(0.5)
-                        file_ref = client.files.get(name=file_ref.name)
-                        state_name = getattr(getattr(file_ref, "state", None), "name", None)
-                        if state_name == "ACTIVE":
-                            break
-
-            refs.append(file_ref)
-            progress_bar.progress(
-                i / len(uploaded_files),
-                text=f"✅ {uploaded_file.name} ({i}/{len(uploaded_files)})"
-            )
-
-        except Exception as e:
-            progress_bar.empty()
-            st.error(f"Erro ao enviar {uploaded_file.name}: {e}")
-            # Falha dura para manter coerência com seu fluxo atual
-            raise
-
-    progress_bar.empty()
-    st.success(f"🎉 {len(refs)} arquivo(s) enviado(s) com sucesso!")
+    pb = st.progress(0, text="Enviando arquivos para o Gemini (Files API)…")
+    for i, f in enumerate(uploaded_files, start=1):
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / f.name
+            p.write_bytes(f.getvalue())
+            up = client.files.upload(file=p)  # Files API (armazenamento temporário)
+            refs.append(up)
+        pb.progress(int(i * 100 / len(uploaded_files)), text=f"Enviado: {f.name}")
+    pb.empty()
     return refs
 
 def _call_gemini(files_refs) -> dict:
     """
-    Chamada ao modelo Gemini com configuração robusta.
+    Chama o modelo com Files API + system_instruction via config,
+    e força retorno em JSON usando response_schema.
     """
-    user_prompt = "Analise os documentos enviados conforme as instruções do sistema e retorne apenas o JSON estruturado solicitado."
-    
-    try:
-        # Primeira tentativa: com schema completo
-        response = client.models.generate_content(
-            model=GEMINI_MODEL,
-            contents=[user_prompt] + files_refs,
-            config=types.GenerateContentConfig(
-                system_instruction=SYSTEM_PROMPT,
-                response_mime_type="application/json",
-                response_schema=REURB_SCHEMA,
-                temperature=0.1,
-                max_output_tokens=4096,
-            ),
-        )
-        
-        text = _resp_to_text(response)
-        return _extract_json(text)
-        
-    except Exception as e:
-        st.warning(f"Schema restritivo falhou: {str(e)}. Tentando sem schema...")
-        
-        # Segunda tentativa: apenas JSON sem schema
-        try:
-            response = client.models.generate_content(
-                model=GEMINI_MODEL,
-                contents=[user_prompt] + files_refs,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    response_mime_type="application/json",
-                    temperature=0.1,
-                    max_output_tokens=4096,
-                ),
-            )
-            
-            text = _resp_to_text(response)
-            return _extract_json(text)
-            
-        except Exception as e2:
-            st.warning(f"JSON sem schema falhou: {str(e2)}. Tentando texto livre...")
-            
-            # Terceira tentativa: texto livre
-            try:
-                response = client.models.generate_content(
-                    model=GEMINI_MODEL,
-                    contents=[user_prompt] + files_refs,
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_PROMPT,
-                        temperature=0.1,
-                        max_output_tokens=4096,
-                    ),
-                )
-                
-                text = _resp_to_text(response)
-                return _extract_json(text)
-                
-            except Exception as e3:
-                st.error(f"Todas as tentativas falharam. Último erro: {str(e3)}")
-                raise e3
+    # Dica: inclua um prompt curto no contents (além do system_instruction) para “ancorar” a intenção do usuário
+    user_prompt = "Analise os arquivos conforme as instruções do sistema e retorne SOMENTE o JSON solicitado."
+
+    resp = client.models.generate_content(
+        model=GEMINI_MODEL,  # ex.: "gemini-2.0-flash" / "gemini-2.5-flash"
+        contents=[user_prompt, *files_refs],  # texto + arquivos (padrão do SDK)
+        config=types.GenerateContentConfig(
+            system_instruction=SYSTEM_PROMPT,                 # << aqui é o lugar certo
+            response_mime_type="application/json",           # força JSON puro
+            response_schema=REURB_SCHEMA,                    # estrutura esperada
+            temperature=0,                                   # (opcional) deixar mais determinístico
+            max_output_tokens=2048,                          # (opcional) se a saída for longa
+        ),
+    )
+
+    text = _resp_to_text(resp)      # seu helper de extração continua valendo
+    return _extract_json(text) 
 
 def _build_dashboard(payload: Dict[str, Any]):
-    """Constrói o dashboard de análise."""
-    files = payload.get("files", [])
-    missing = payload.get("missing_documents", [])
+    """Monta o dashboard completo a partir do JSON."""
+    files = payload.get("files", []) or []
+    missing = payload.get("missing_documents", []) or []
     likely_modality = payload.get("likely_modality")
 
-    # Métricas principais
+    # Status/feedback do carregamento (UI)
+    with st.status("Carregando análise…", expanded=False) as s:  # st.status para feedback :contentReference[oaicite:2]{index=2}
+        s.update(label="Análise carregada", state="complete", expanded=False)
+
+    # ---------------- KPIs ----------------
     total_files = len(files)
-    relevant_files = sum(1 for f in files if f.get("relevant_for_reurb", False))
-    
-    st.subheader("📊 Resumo da Análise")
-    col1, col2, col3, col4 = st.columns(4)
-    
-    with col1:
-        st.metric("Arquivos analisados", total_files)
-    with col2:
-        st.metric("Relevantes p/ REURB", relevant_files)
-    with col3:
-        st.metric("Não relevantes", total_files - relevant_files)
-    with col4:
-        st.metric("Documentos faltantes", len(missing))
+    relevant_files = sum(1 for f in files if f.get("relevant_for_reurb"))
+    st.subheader("Resumo")
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Arquivos recebidos", total_files)
+    c2.metric("Relevantes p/ REURB", relevant_files)
+    c3.metric("Não relevantes", total_files - relevant_files)
+    c4.metric("Documentos faltantes", len(missing))
 
     # Distribuição por tipo
-    if files:
-        type_counts = Counter([f.get("detected_type", "Indefinido") for f in files])
-        type_df = pd.DataFrame({
-            "Tipo": list(type_counts.keys()), 
-            "Quantidade": list(type_counts.values())
-        }).sort_values("Quantidade", ascending=False)
-        
-        st.subheader("📈 Distribuição por Tipo de Documento")
-        st.bar_chart(type_df.set_index("Tipo"))
+    type_counts = Counter([(f.get("detected_type") or "—") for f in files])
+    if type_counts:
+        type_df = pd.DataFrame(
+            {"Tipo": list(type_counts.keys()), "Quantidade": list(type_counts.values())}
+        ).set_index("Tipo")
+        st.bar_chart(type_df)
 
-    # Tabs organizadas
-    tab_files, tab_missing, tab_summary, tab_raw = st.tabs([
-        "📄 Arquivos Analisados", 
-        "📋 Documentos Faltantes", 
-        "📝 Resumo Executivo",
-        "🔧 Dados Brutos"
-    ])
+    # Abas
+    tab_files, tab_missing, tab_raw = st.tabs(
+        ["📄 Arquivos analisados", "✅ Checklist de faltantes", "🧾 JSON bruto"]
+    )
 
-    # Tab: Arquivos analisados
+    # --------- Arquivos analisados ----------
     with tab_files:
-        if not files:
-            st.info("Nenhum arquivo foi analisado.")
+        st.subheader("Arquivos analisados")
+        df = pd.DataFrame(files)
+        if df.empty:
+            st.info("Sem arquivos para exibir.")
         else:
-            df = pd.DataFrame(files)
-            
-            # Preparação dos dados para exibição
-            df["confidence_pct"] = (df.get("confidence", 0.0) * 100).round(1)
-            df["relevante"] = df.get("relevant_for_reurb", False)
-            df["tipo"] = df.get("detected_type", "Indefinido")
-            df["arquivo"] = df.get("file_name", "Sem nome")
-            df["notas"] = df.get("notes", "")
+            df["confidence_pct"] = (df.get("confidence", 0.0).fillna(0.0) * 100).round(0)
+            df["relevante"] = df.get("relevant_for_reurb", False).fillna(False)
+            df["tipo"] = df.get("detected_type").fillna("—")
+            df["arquivo"] = df.get("file_name").fillna("—")
+            df["notas"] = df.get("notes").fillna("")
+            key_fields_text = df.get("key_fields").apply(
+                lambda x: json.dumps(x, ensure_ascii=False) if isinstance(x, dict) else ""
+            ).fillna("")
 
             # Filtros
-            col1, col2 = st.columns(2)
-            with col1:
-                relevance_filter = st.selectbox(
-                    "Filtrar por relevância:",
-                    ["Todos", "Apenas relevantes", "Apenas não relevantes"]
+            f1, f2, f3 = st.columns([1, 1, 2])
+            with f1:
+                filtro_relev = st.selectbox(
+                    "Filtrar por relevância", ["Todos", "Apenas relevantes", "Apenas não relevantes"]
                 )
-            with col2:
-                available_types = sorted(df["tipo"].unique())
-                selected_types = st.multiselect(
-                    "Tipos de documento:", 
-                    available_types, 
-                    default=available_types
+            with f2:
+                tipos = sorted(df["tipo"].unique().tolist())
+                filtro_tipos = st.multiselect("Tipos", tipos, default=tipos)
+            with f3:
+                termo = st.text_input("Buscar (arquivo / notas / campos-chave)")
+
+            mask = df["tipo"].isin(filtro_tipos)
+            if filtro_relev == "Apenas relevantes":
+                mask &= df["relevante"] == True
+            elif filtro_relev == "Apenas não relevantes":
+                mask &= df["relevante"] == False
+            if termo.strip():
+                t = termo.lower()
+                mask &= (
+                    df["arquivo"].str.lower().str.contains(t)
+                    | df["notas"].str.lower().str.contains(t)
+                    | key_fields_text.str.lower().str.contains(t)
                 )
 
-            # Aplicar filtros
-            filtered_df = df[df["tipo"].isin(selected_types)]
-            if relevance_filter == "Apenas relevantes":
-                filtered_df = filtered_df[filtered_df["relevante"] == True]
-            elif relevance_filter == "Apenas não relevantes":
-                filtered_df = filtered_df[filtered_df["relevante"] == False]
+            view = df.loc[mask, ["arquivo", "tipo", "confidence_pct", "relevante", "notas"]].reset_index(drop=True)
 
-            # Exibir tabela
-            display_df = filtered_df[["arquivo", "tipo", "confidence_pct", "relevante", "notas"]].copy()
-            
+            # Tabela com barra de progresso de confiança (ProgressColumn) :contentReference[oaicite:3]{index=3}
             st.dataframe(
-                display_df,
+                view,
                 use_container_width=True,
                 hide_index=True,
                 column_config={
                     "arquivo": st.column_config.TextColumn("Arquivo"),
-                    "tipo": st.column_config.TextColumn("Tipo"),
+                    "tipo": st.column_config.TextColumn("Tipo detectado"),
                     "confidence_pct": st.column_config.ProgressColumn(
-                        "Confiança (%)", 
-                        min_value=0, 
-                        max_value=100,
-                        format="%.1f%%"
+                        "Confiança (%)", min_value=0, max_value=100, format="%d%%"
                     ),
-                    "relevante": st.column_config.CheckboxColumn("Relevante"),
-                    "notas": st.column_config.TextColumn("Observações"),
-                }
+                    "relevante": st.column_config.CheckboxColumn("Relevante p/ REURB"),
+                    "notas": st.column_config.TextColumn("Notas"),
+                },
             )
 
-            with st.expander("🔍 Ver campos extraídos por arquivo"):
-                for _, row in filtered_df.iterrows():
-                    key_fields = row.get("key_fields", {}) or {}
-                    if key_fields:
-                        st.subheader(row["arquivo"])
-                        st.json(key_fields)
+            # Expanders com key_fields
+            with st.expander("Ver campos-chave extraídos (por arquivo)"):
+                for row in df.loc[mask].to_dict(orient="records"):
+                    kf = row.get("key_fields") or {}
+                    if not kf:
+                        continue
+                    with st.expander(f"{row.get('file_name', 'Arquivo')}"):
+                        st.json(kf)
 
+            # Export
+            st.download_button(
+                "Baixar CSV (arquivos filtrados)",
+                data=view.to_csv(index=False).encode("utf-8"),
+                file_name="reurb_arquivos.csv",
+                mime="text/csv",
+            )  # st.download_button para exportar :contentReference[oaicite:4]{index=4}
 
-    # Tab: Documentos faltantes
+    # --------- Checklist faltantes ----------
     with tab_missing:
+        st.subheader("Checklist de documentos faltantes")
         if likely_modality:
-            st.info(f"**Modalidade provável:** {likely_modality}")
-        
+            st.markdown(f"**Modalidade provável:** `{likely_modality}`")
+        else:
+            st.markdown("**Modalidade provável:** `Indeterminada`")
+
         if not missing:
-            st.success("✅ Nenhum documento faltante identificado pelo modelo.")
+            st.success("Nenhum documento faltante listado pelo modelo.")
         else:
-            st.subheader(f"📋 {len(missing)} documento(s) faltante(s) identificado(s)")
-            
-            missing_df = pd.DataFrame(missing)
-            
-            # Mapeamento de prioridades com ícones
-            priority_mapping = {
-                "alta": "🔴 Alta",
-                "média": "🟡 Média", 
-                "media": "🟡 Média",
-                "baixa": "🟢 Baixa"
-            }
-            
-            missing_df["priority_display"] = missing_df.get("priority", "").str.lower().map(priority_mapping).fillna("⚪ Indefinida")
-            missing_df["legal_basis"] = missing_df.get("legal_basis", "").fillna("N/A")
-            
-            # Filtro por prioridade
-            available_priorities = sorted(missing_df["priority_display"].unique())
-            selected_priorities = st.multiselect(
-                "Filtrar por prioridade:",
-                available_priorities,
-                default=available_priorities
+            miss_df = pd.DataFrame(missing)
+            miss_df["priority"] = (
+                miss_df.get("priority", "")
+                .fillna("")
+                .str.lower()
+                .map({"alta": "Alta 🔴", "média": "Média 🟡", "media": "Média 🟡", "baixa": "Baixa 🟢"})
+                .fillna("—")
             )
-            
-            filtered_missing = missing_df[missing_df["priority_display"].isin(selected_priorities)]
-            
-            # Exibir tabela
-            display_missing = filtered_missing[[
-                "name", "priority_display", "legal_basis", "why_needed"
-            ]].rename(columns={
-                "name": "Documento",
-                "priority_display": "Prioridade", 
-                "legal_basis": "Base Legal",
-                "why_needed": "Justificativa"
-            })
-            
+            miss_df["legal_basis"] = miss_df.get("legal_basis").fillna("—")
+            miss_df.rename(
+                columns={
+                    "name": "Documento",
+                    "why_needed": "Por que necessário",
+                    "legal_basis": "Base legal",
+                    "priority": "Prioridade",
+                },
+                inplace=True,
+            )
+
+            prioridades = ["Alta 🔴", "Média 🟡", "Baixa 🟢", "—"]
+            sel_prior = st.multiselect("Prioridades", prioridades, default=prioridades[:-1])
+            miss_view = miss_df[miss_df["Prioridade"].isin(sel_prior)]
+
             st.dataframe(
-                display_missing,
+                miss_view[["Documento", "Prioridade", "Base legal", "Por que necessário"]],
                 use_container_width=True,
-                hide_index=True
+                hide_index=True,
             )
 
-    # Tab: Resumo executivo
-    with tab_summary:
-        st.subheader("📝 Resumo Executivo")
-        
-        # Status geral
-        if likely_modality:
-            st.success(f"**Modalidade REURB identificada:** {likely_modality}")
-        else:
-            st.warning("**Modalidade REURB:** Indeterminada com base nos documentos enviados")
-        
-        # Análise de completude
-        completeness = (relevant_files / max(total_files, 1)) * 100
-        if completeness >= 80:
-            st.success(f"**Completude documental:** {completeness:.1f}% - Boa cobertura")
-        elif completeness >= 60:
-            st.warning(f"**Completude documental:** {completeness:.1f}% - Cobertura adequada")
-        else:
-            st.error(f"**Completude documental:** {completeness:.1f}% - Documentação insuficiente")
-        
-        # Próximos passos
-        st.subheader("🎯 Próximos Passos Recomendados")
-        if missing:
-            high_priority = [doc for doc in missing if doc.get("priority", "").lower() == "alta"]
-            if high_priority:
-                st.error(f"**Urgente:** {len(high_priority)} documento(s) de alta prioridade faltando")
-                for doc in high_priority:
-                    st.write(f"• **{doc['name']}**: {doc['why_needed']}")
-        else:
-            st.success("**Documentação aparenta estar completa** para prosseguir com o processo REURB")
+            st.download_button(
+                "Baixar JSON (faltantes filtrados)",
+                data=miss_view.to_json(orient="records", force_ascii=False).encode("utf-8"),
+                file_name="reurb_faltantes.json",
+                mime="application/json",
+            )
+            st.download_button(
+                "Baixar CSV (faltantes filtrados)",
+                data=miss_view.to_csv(index=False).encode("utf-8"),
+                file_name="reurb_faltantes.csv",
+                mime="text/csv",
+            )
 
-    # Tab: Dados brutos
+    # --------- JSON bruto ----------
     with tab_raw:
-        st.subheader("🔧 JSON Bruto da Análise")
+        st.subheader("JSON bruto")
         st.json(payload, expanded=False)
-        
-        # Download do JSON
-        json_str = json.dumps(payload, ensure_ascii=False, indent=2)
-        st.download_button(
-            label="📥 Baixar análise completa (JSON)",
-            data=json_str.encode("utf-8"),
-            file_name="reurb_analise_completa.json",
-            mime="application/json"
-        )
 
 # -----------------------------
-# Interface Principal
+# UI principal — Upload & Ação
 # -----------------------------
-st.markdown("---")
-st.subheader("📤 Upload de Documentos")
-
-st.info(
-    "📋 **Tipos suportados:** PDF e DOCX  \n"
-    "🔐 **Privacidade:** Arquivos são enviados temporariamente para análise e não são armazenados permanentemente  \n"
-    "⚡ **Processamento:** Análise automatizada via IA especializada em REURB"
+st.caption(
+    "Envie **PDF/DOCX**. Os arquivos são enviados à Files API do Gemini para análise multimodal "
+    "(armazenamento temporário)."
 )
 
 uploaded_files = st.file_uploader(
-    "Selecione os documentos para análise:",
-    type=["pdf", "docx"],
+    "Selecione arquivos PDF/DOCX",
+    type=["pdf", "docx"],                # restrição de tipos (Streamlit) :contentReference[oaicite:5]{index=5}
     accept_multiple_files=True,
-    help="Envie documentos relacionados ao processo REURB (RG, CPF, escrituras, plantas, etc.)"
 )
 
-if uploaded_files:
-    st.success(f"✅ {len(uploaded_files)} arquivo(s) carregado(s)")
-    
-    # Mostrar lista de arquivos
-    with st.expander("📁 Arquivos carregados"):
-        for i, file in enumerate(uploaded_files, 1):
-            file_size = len(file.getvalue()) / 1024  # KB
-            st.write(f"{i}. **{file.name}** ({file_size:.1f} KB)")
-    
-    # Botão de análise
-    if st.button("🚀 Iniciar Análise", type="primary", use_container_width=True):
-        try:
-            # Upload para Gemini
-            with st.status("📤 Enviando arquivos para análise...", expanded=True) as status:
-                file_refs = _upload_files_to_gemini(uploaded_files)
-                status.update(label="✅ Upload concluído", state="complete")
-            
-            # Análise
-            with st.status("🧠 Analisando documentos com IA...", expanded=True) as status:
-                analysis_result = _call_gemini(file_refs)
-                status.update(label="✅ Análise concluída", state="complete")
-            
-            # Salvar na sessão e exibir
-            st.session_state["reurb_analysis"] = analysis_result
-            st.success("🎉 Análise concluída com sucesso! Veja os resultados abaixo.")
-            st.balloons()
-            
-        except Exception as e:
-            st.error("❌ Erro durante a análise:")
-            st.exception(e)
-
+ready_to_analyze = bool(uploaded_files)
+if not ready_to_analyze:
+    st.info("Aguardando arquivos…")
 else:
-    st.info("⬆️ Faça upload dos documentos para começar a análise")
+    # Botão para disparar a análise
+    if st.button("Analisar no Gemini", type="primary"):
+        # 1) Upload dos arquivos
+        with st.status("1/2 — Enviando arquivos…", expanded=False) as s1:
+            refs = _upload_files_to_gemini(uploaded_files)
+            s1.update(label="Upload concluído", state="complete")
 
-# Exibir dashboard se houver análise
-if "reurb_analysis" in st.session_state:
-    st.markdown("---")
-    _build_dashboard(st.session_state["reurb_analysis"])
+        # 2) Chamada ao modelo
+        with st.status("2/2 — Gerando análise com Gemini…", expanded=False) as s2:
+            try:
+                payload = _call_gemini(refs)  # generate_content + parse JSON
+            except Exception as e:
+                st.error("Falha ao obter/interpretar a resposta do modelo.")
+                st.exception(e)
+                st.stop()
+            s2.update(label="Análise concluída", state="complete")
 
-# Rodapé
-st.markdown("---")
-st.caption(
-    "🏗️ **REURB Analyzer** - Ferramenta de análise documental para Regularização Fundiária Urbana  \n"
-    "⚖️ Base legal: Lei 13.465/2017 e Decreto 9.310/2018  \n"
-    "🤖 Powered by Google Gemini AI"
-)
+        # 3) Persistir e renderizar dashboard
+        st.session_state["gemini_payload"] = payload
+        st.success("Análise pronta. Veja o dashboard abaixo 👇")
+
+# Renderiza dashboard se já houver payload na sessão (ou recém-gerado)
+if "gemini_payload" in st.session_state:
+    _build_dashboard(st.session_state["gemini_payload"])
