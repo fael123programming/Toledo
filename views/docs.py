@@ -142,45 +142,45 @@ def _extract_json(text: str):
 # ——————————————————————————————————————————————————————————————
 # 3) Chamada ao Gemini forçando JSON puro
 # ——————————————————————————————————————————————————————————————
-# REURB_SCHEMA: use os tipos do SDK (STRING, NUMBER, BOOLEAN, OBJECT, ARRAY)
 REURB_SCHEMA = {
-    "type": "OBJECT",
-    "required": ["files", "missing_documents"],
-    "properties": {
-        "files": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "required": [
-                    "file_name", "detected_type", "confidence",
-                    "relevant_for_reurb", "key_fields", "notes"
-                ],
-                "properties": {
-                    "file_name": {"type": "STRING"},
-                    "detected_type": {"type": "STRING"},
-                    "confidence": {"type": "NUMBER"},
-                    "relevant_for_reurb": {"type": "BOOLEAN"},
-                    "key_fields": {"type": "OBJECT"},
-                    "notes": {"type": "STRING"},
-                },
-            },
-        },
-        # não há "nullable" no schema; trate null na aplicação
-        "likely_modality": {"type": "STRING"},
-        "missing_documents": {
-            "type": "ARRAY",
-            "items": {
-                "type": "OBJECT",
-                "required": ["name", "why_needed", "priority"],
-                "properties": {
-                    "name": {"type": "STRING"},
-                    "why_needed": {"type": "STRING"},
-                    "legal_basis": {"type": "STRING"},
-                    "priority": {"type": "STRING"},
-                },
-            },
-        },
+  "type": "OBJECT",
+  "required": ["files", "missing_documents"],
+  "properties": {
+    "files": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "required": ["file_name","detected_type","confidence","relevant_for_reurb","key_fields","notes"],
+        "properties": {
+          "file_name": {"type": "STRING"},
+          "detected_type": {"type": "STRING"},
+          "confidence": {"type": "NUMBER"},
+          "relevant_for_reurb": {"type": "BOOLEAN"},
+          # 👇 em vez de OBJECT vazio, declare um dict homogêneo:
+          "key_fields": { "type": "OBJECT", "properties": {
+              # defina AO MENOS UMA propriedade genérica OU troque para um map por typing (melhor com Pydantic)
+              # Exemplo minimalista (se não quiser Pydantic):
+              "_": {"type": "STRING"}
+          }},
+          "notes": {"type": "STRING"},
+        }
+      }
     },
+    "likely_modality": {"type": "STRING"},  # trate null na aplicação
+    "missing_documents": {
+      "type": "ARRAY",
+      "items": {
+        "type": "OBJECT",
+        "required": ["name","why_needed","priority"],
+        "properties": {
+          "name": {"type": "STRING"},
+          "why_needed": {"type": "STRING"},
+          "legal_basis": {"type": "STRING"},
+          "priority": {"type": "STRING"}
+        }
+      }
+    }
+  }
 }
 
 
