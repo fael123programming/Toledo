@@ -218,7 +218,7 @@ def _upload_files_to_gemini(uploaded_files) -> List[Any]:
             
             try:
                 # Upload usando o caminho temporário
-                file_ref = client.files.upload(path=tmp_path)
+                file_ref = client.files.upload(file=tmp_path)
                 refs.append(file_ref)
                 
                 progress_bar.progress(
